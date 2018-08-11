@@ -1,0 +1,26 @@
+.absolute {
+  position: absolute !important;
+}
+.relative {
+  position: relative;
+}
+
+.at-top {
+  top: 0 !important;
+}
+.at-top-over-2em {
+  top: -2em !important;
+}
+.at-right {
+  right: 0 !important;
+}
+.at-bot {
+  bottom: 0 !important;
+}
+.at-bot-over-2px {
+  bottom: -2px !important;
+}
+.at-center {
+  left: 50% !important;
+  transform: translateX(-50%);
+}

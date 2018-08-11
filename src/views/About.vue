@@ -1,5 +1,5 @@
 <template>
   <div class="about">
-    <h1>This is an about page</h1>
+    <h1>App ver 3107.2237</h1>
   </div>
 </template>

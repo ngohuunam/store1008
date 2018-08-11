@@ -1,0 +1,104 @@
+body,
+html,
+button {
+  box-sizing: border-box;
+  font-family: 'Avenir', Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: subpixel-antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  outline: none !important;
+  border: none !important;
+}
+input,
+select {
+  width: 100% !important;
+  padding-bottom: 1%;
+  margin-bottom: 1%;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  border-bottom: 1px solid #ccc;
+  background: none;
+  outline: none !important;
+  font-size: 1em !important;
+}
+img {
+  width: 100%;
+}
+.shadow {
+  box-shadow: -0.05em 0.05em 0.1em rgba(0, 0, 0, 0.4);
+}
+.round {
+  border-radius: 50% !important;
+}
+.border-top {
+  border-top: 1px #ccc solid !important;
+}
+.border-left {
+  border-left: 1px #ccc solid !important;
+}
+.text-line-through {
+  text-decoration: line-through;
+}
+.text-bold {
+  font-weight: bold;
+}
+.text-bolder {
+  font-weight: bolder;
+}
+.text-light-grey {
+  color: hsl(0, 0%, 96%) !important;
+}
+.text-grey {
+  color: hsl(0, 0%, 50%) !important;
+}
+.text-white {
+  color: white !important;
+}
+.text-red {
+  color: red !important;
+}
+.text-center {
+  text-align: center !important;
+}
+.z-10 {
+  z-index: 10;
+}
+.height-25 {
+  height: 2.5em !important;
+}
+.height-2 {
+  height: 2em !important;
+}
+.height-16 {
+  height: 1.6em !important;
+}
+.overflow-hidden {
+  overflow: hidden !important;
+}
+.bg {
+  transition: all 0.3s ease-in-out;
+  color: white !important;
+}
+.bg.white {
+  background-color: white !important;
+  color: inherit !important;
+}
+.bg.white-06 {
+  background-color: rgba(255, 255, 255, 0.6) !important;
+  color: inherit !important;
+}
+.bg.green {
+  background-color: hsl(141, 71%, 48%) !important;
+}
+.bg.cyan {
+  background-color: hsl(204, 86%, 53%) !important;
+}
+.bg.red {
+  background-color: red !important;
+}
+.bg.yellow {
+  background-color: hsl(48, 100%, 67%) !important;
+}
+.bg.light-grey {
+  background-color: hsl(0, 0%, 90%) !important;
+}
