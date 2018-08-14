@@ -1,4 +1,8 @@
 export default {
+  firstTime: true,
+  worker: false,
+  imgsWorker: false,
+  socket: false,
   loading: require('../assets/loading.jpg'),
   isConnected: false,
   shippingCost: 35,

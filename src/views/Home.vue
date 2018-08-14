@@ -19,16 +19,16 @@
     </div>
 
     <!-- List items -->
-    <HomeItem v-if="show && list.length > 4" v-for="(n, i) in homeList" :index="i" :key="n" :name="list[n]" :class="{'from-to-right': i % 2 === 1}" :activeColorIndex="itemIndex === i ? activeColorIndex : null" @viewImage="viewImage" @routerPush="routerPush" />
+    <HomeItem v-if="show && prodLen > 4" v-for="(n, i) in homeList" :index="i" :key="n" :name="list[n]" :class="{'from-to-right': i % 2 === 1}" @viewImage="viewImage" @routerPush="routerPush" />
 
     <!-- Intersect -->
-    <Intersect v-if="show && list.length > 4" @enter="load" key="intersect" />
+    <Intersect v-if="show && prodLen > 4" @enter="load" key="intersect" />
 
     <!-- Modal -->
     <div v-if="sliderData.length" key="modal" class="modal-mask from-to-top" @click="closeModal">
       <div class="modal" @click.stop>
         <button class="btn close absolute at-top at-right z-10" @click="closeModal" />
-        <Slider :datas="sliderData" :nav="true" @navTo="navTo" :activeData="activeData" />
+        <Slider :datas="sliderData" :prod="sliderProd" :nav="true" @navTo="navTo" :activeData="activeData" />
       </div>
     </div>
 
@@ -49,10 +49,10 @@ export default {
       openModal: false,
       sliderData: [],
       activeData: '',
-      activeColorIndex: '',
       done: false,
       itemIndex: null,
       homeList: [],
+      sliderProd: '',
     }
   },
   mounted() {
@@ -87,8 +87,8 @@ export default {
         })
       }
     },
-    navTo(i) {
-      this.activeColorIndex = i
+    navTo(prod, hex) {
+      this.$store.commit('operate', { name: prod, value: { hex: hex } })
     },
     shuffle() {
       this.homeItems = this.homeItems
@@ -103,13 +103,14 @@ export default {
     viewImage(item, hex, itemIndex) {
       document.documentElement.style.overflow = 'hidden'
       this.itemIndex = itemIndex
+      this.sliderProd = item._id
       this.sliderData = item.colors.map(color => {
         return {
-          hex: color.hex,
+          hex: color.value,
           imgs: color.imgs,
         }
       })
-      this.activeData = hex ? item.colors.findIndex(color => color.hex === hex) : 0
+      this.activeData = item.colors.findIndex(color => color.value === hex)
     },
   },
   beforeDestroy() {},
@@ -122,6 +123,11 @@ export default {
     list: {
       get() {
         return this.$store.state.list.value
+      },
+    },
+    prodLen: {
+      get() {
+        return this.$store.state.prods.length
       },
     },
   },

@@ -14,7 +14,9 @@
 export default {
   name: 'App',
   components: {},
-  created() {},
+  created() {
+    console.log('App created')
+  },
   mounted() {
     const size = this.$el.clientWidth * 0.04
     this.fontSize = `font-size: ${size}px !important;`

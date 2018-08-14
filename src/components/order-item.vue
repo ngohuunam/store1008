@@ -10,7 +10,7 @@
     </div>
     <div class="flex space-between">
       <div class="flex-10">
-        <ImageLoad class="fit" :src="img" :loading="loading" />
+        <ImageLoad class="fit" :prod="item.name" :hex="item.hex" :url="img" />
       </div>
       <div class="col flex-85 align-end">
         <div class="flex-1 align-end"> {{info}} </div>
@@ -56,11 +56,6 @@ export default {
     },
   },
   computed: {
-    loading: {
-      get() {
-        return this.$store.state.loading
-      },
-    },
     hasStar: {
       get() {
         return this.$store.getters.hasStar(this.item.id)

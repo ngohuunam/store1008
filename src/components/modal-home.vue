@@ -2,7 +2,7 @@
   <div class="modal-mask" @click="$emit('close')">
     <div class="modal" @click.stop>
       <button class="btn close absolute at-top at-right z-10" @click="$emit('close')" />
-      <Slider :datas="sliderData" :nav="true" @navTo="navTo" :activeData="activeData" />
+      <Slider :datas="sliderData" :prod="prod" :nav="true" @navTo="navTo" :activeData="activeData" />
     </div>
   </div>
 </template>
@@ -13,7 +13,7 @@ import Slider from '@/components/img-slider.vue'
 export default {
   name: 'modal',
   components: { Slider },
-  props: ['colors', 'activeData'],
+  props: ['colors', 'activeData', 'prod'],
   data() {
     return {}
   },

@@ -1,5 +1,5 @@
 <template>
-  <div class="card home">
+  <div class="card home" v-if="item">
     <div class="relative center overflow-hidden m-b-4">
       <!-- Top info -->
       <div class="absolute at-top flex space-between align-center height-25 full-width z-10">
@@ -28,7 +28,7 @@
 
       <!-- Image -->
       <transition name="fade" class="relative">
-        <ImageLoad class="from-to-top active-absolute fit center" :key="operate.hex" :src="price.img" @click.native="$emit('viewImage', item, operate.hex, index)" />
+        <ImageLoad class="from-to-top active-absolute fit center" :prod="name" :hex="imgHex" :key="imgHex" :url="price.img" @click.native="$emit('viewImage', item, imgHex, index)" />
       </transition>
 
       <!-- Price -->
@@ -76,26 +76,18 @@
 </template>
 
 <script>
-// import ws from '../ws.js'
 import ImageLoad from '@/components/image-load.vue'
 
 export default {
   name: 'home-item',
-  props: ['name', 'index', 'activeColorIndex'],
+  props: ['name', 'index'],
   components: { ImageLoad },
-  created() {
-    // const rev = this.item ? this.item._rev : undefined
-    // ws.send(JSON.stringify({ type: 'get-prod', prodName: this.name, rev: rev }))
-  },
+  created() {},
   mounted() {},
   data() {
     return {}
   },
-  watch: {
-    activeColorIndex: function(i) {
-      if (i && i > -1) this.operate = { hex: this.item.colors[i].hex }
-    },
-  },
+  watch: {},
   methods: {
     sizeBtnClick(size) {
       this.operate = { size: size.size }
@@ -161,6 +153,11 @@ export default {
     },
   },
   computed: {
+    imgHex: {
+      get() {
+        return this.operate.hex || this.item.colors[0].value
+      },
+    },
     badgeClass: {
       get() {
         const bg = this.operate.des ? (this.operate.des === 'cart' ? ' green' : ' cyan') : ''

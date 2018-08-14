@@ -1,6 +1,7 @@
 import { get } from 'idb-keyval'
 
-const remote = 'ws://192.168.1.200:5000'
+const remote = 'ws://51.15.68.18:5000'
+// const remote = 'ws://192.168.1.200:5000'
 // const remote = 'ws://192.168.2.190:5000'
 let socket = new WebSocket(remote)
 let timeout
@@ -34,6 +35,9 @@ const onEvent = () => {
       switch (event) {
         case 'onmessage':
           switch (func) {
+            case 'connected':
+              console.log(data)
+              break
             case 'list':
               if (data.changed) {
                 const list = data.data.value

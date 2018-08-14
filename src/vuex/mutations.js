@@ -1,3 +1,17 @@
+export const socket = (state, data) => {
+  state.socket = data.value
+}
+
+export const worker = (state, data) => {
+  const des = data.des
+  const value = data.value
+  state[des] = value
+}
+
+export const firstTime = (state, bool) => {
+  state.firstTime = bool
+}
+
 export const fetchList = (state, data) => {
   state.list = data.data
   if (data.removed && data.removed.length) {
@@ -5,15 +19,20 @@ export const fetchList = (state, data) => {
   }
 }
 
+export const pushList = (state, id) => {
+  state.list.push(id)
+}
+
 export const pushProd = (state, messData) => {
   const data = messData.data
   let prod = state.prods.length ? state.prods.find(_prod => _prod.name === data._id) : null
   if (prod) prod = { ...prod, ...data }
   else state.prods.push(data)
+  if (data.list) state.list.push(data.list)
 }
 
 export const pushColor = (state, messData) => {
-  const datas = messData.datas
+  const datas = messData.data
   const prod = state.prods.find(_prod => _prod._id === datas[0].prod)
   if (prod) {
     datas.map(color => {
@@ -25,11 +44,24 @@ export const pushColor = (state, messData) => {
 }
 
 export const pushItem = (state, messData) => {
-  const datas = messData.datas
+  const data = messData.data
+  const prod = state.prods.find(_prod => _prod._id === data.prod)
+  if (prod) {
+    const color = prod.colors.find(_color => _color.value === data.hex)
+    if (color) {
+      let currentSize = color.sizes.find(size => size._id === data._id)
+      if (currentSize) currentSize = data
+      else color.sizes.push(data)
+    }
+  }
+}
+
+export const pushItems = (state, messData) => {
+  const datas = messData.data
   const prod = state.prods.find(_prod => _prod._id === datas[0].prod)
   if (prod) {
     datas.map(_d => {
-      const color = prod.colors.find(color => color._id === _d.colors)
+      const color = prod.colors.find(color => color.value === _d.hex)
       if (color) {
         let currentSize = color.sizes.find(size => size._id === _d._id)
         if (currentSize) currentSize = _d

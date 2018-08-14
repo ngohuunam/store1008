@@ -1,7 +1,7 @@
 <template>
   <div class="slider-container" :style="height">
     <transition :name="transitionName" class="slider">
-      <ImageLoad :src="img" :key="img" v-touch:swipe.left="next" v-touch:swipe.right="previous" />
+      <ImageLoad :prod="prod" :hex="data.hex" :url="img" :key="img" v-touch:swipe.left="next" v-touch:swipe.right="previous" />
     </transition>
 
     <div class="nav-slider" v-if="nav">
@@ -24,7 +24,7 @@ import ImageLoad from '@/components/image-load.vue'
 
 export default {
   name: 'img-slider',
-  props: ['datas', 'nav', 'auto', 'ratio', 'activeData'],
+  props: ['datas', 'nav', 'auto', 'ratio', 'activeData', 'prod'],
   components: { ImageLoad },
   data() {
     return {
@@ -37,6 +37,7 @@ export default {
   },
   mounted() {
     this.$nextTick(function() {
+      this.$emit('navTo', this.prod, this.hex)
       const ratio = this.ratio || 4 / 3
       this.h = this.$el.clientWidth * ratio
       this.fs = this.h * 0.02
@@ -52,7 +53,7 @@ export default {
     navTo(i) {
       this.data_i = i
       this.img_i = 0
-      this.$emit('navTo', i)
+      this.$emit('navTo', this.prod, this.hex)
     },
     next() {
       this.transitionName = 'left-right'
@@ -60,7 +61,7 @@ export default {
         if (this.datas.length > 1) {
           if (this.data_i === this.datas.length - 1) this.data_i = 0
           else this.data_i += 1
-          this.$emit('navTo', this.data_i)
+          this.$emit('navTo', this.prod, this.hex)
         }
         this.img_i = 0
       } else this.img_i += 1
@@ -71,7 +72,7 @@ export default {
         if (this.datas.length > 1) {
           if (this.data_i === 0) this.data_i = this.datas.length - 1
           else this.data_i -= 1
-          this.$emit('navTo', this.data_i)
+          this.$emit('navTo', this.prod, this.hex)
         }
         this.img_i = this.imgs.length - 1
       } else this.img_i -= 1
