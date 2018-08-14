@@ -185,6 +185,7 @@ export default {
       get() {
         // const random = Math.floor(Math.random() * (1000 - 1)) + 1
         let img = this.item ? (this.item.colors.length ? (this.item.colors[0].imgs ? this.item.colors[0].imgs[0] : '') : '') : ''
+        // const PRICE = this.item.colors.reduce
         if (this.colorObj) {
           img = this.colorObj.imgs[0]
           if (this.sizeObj && this.sizeObj.sale) {

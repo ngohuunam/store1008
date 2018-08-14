@@ -4,9 +4,9 @@ import { Store, get } from 'idb-keyval'
 
 const idbstore = new Store('vms-state')
 
-const remote = 'ws://51.15.68.18:5000'
-// const remote = 'ws://192.168.1.200:5000'
-// const remote = 'ws://192.168.2.190:5000'
+const remote = process.env.NODE_ENV === 'production' ? 'wss://busti.club/' : 'ws://51.15.68.18'
+// const remote = 'wss://192.168.1.200:5000'
+// const remote = 'wss://busti.club/'
 let socket
 let timeout
 let count = 1
