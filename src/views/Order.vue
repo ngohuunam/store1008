@@ -1,7 +1,7 @@
 <template>
   <transition-group name="fade" tag="div" id="order-page" :class="{'ani-reverse': del}">
     <!-- Notice when no order item -->
-    <div v-if="show && !items.length" class="notice from-to-top" key="notice">
+    <div v-if="show && !itemsLen" class="notice from-to-top" key="notice">
       <h1 class="center">Please get some product</h1>
       <button class="btn home size-2" @click="routerPush('/')" />
       <button class="btn bag size-2" :class="{fill: countCart}" @click="routerPush('/cart')">
@@ -13,7 +13,7 @@
     </div>
 
     <!-- Page Sticky use to select all or unselect all -->
-    <div v-if="items.length && show && !openModal" class="card sticky from-to-top" key="sticky">
+    <div v-if="itemsLen && show && !openModal" class="card sticky from-to-top" key="sticky">
       <div class="flex justify-end">
         <button class="flex-1 btn" @click="backAllToCart">
           <span class="btn arrow-left" /> All cart </button>
@@ -32,10 +32,10 @@
     </div>
 
     <!-- List of order items -->
-    <OrderItem v-if="show" v-for="item in orderItems" class="ani-move active-absolute" :key="item.key" :item="item" @isDel="isDel" />
+    <OrderItem v-for="n in itemList" class="ani-move active-absolute" :key="items[n].key" :item="items[n]" @isDel="isDel" />
 
     <!-- Payment info -->
-    <div v-if="done && items.length" class="payment order from-to-bot ani-move" key="payment">
+    <div v-if="done && itemsLen" class="payment order from-to-bot ani-move" key="payment">
       <div>
         <div>Total Amount:</div>
         <div>{{totalOrderAmount.label}}</div>
@@ -68,40 +68,35 @@ export default {
   data() {
     return {
       show: false,
-      orderItems: [],
-      count: 0,
       done: false,
       del: false,
       openModal: false,
+      itemList: [],
     }
   },
   created() {},
   mounted() {
     this.show = true
-    if (this.items.length) {
-      this.unwatch = this.$watch('orderItems', function() {
-        if (this.orderItems.length === this.items.length) {
-          this.orderItems = this.items
-          setTimeout(() => (this.done = true), 200)
-          this.unwatch()
-        }
-      })
-      this.$nextTick(function() {
-        setTimeout(this.pushOrderItems, 200)
-      })
+    this.timeout = null
+    if (this.itemsLen) {
+      this.pushList()
     }
   },
-  beforeDestroy() {},
+  beforeDestroy() {
+    clearTimeout(this.timeout)
+  },
   methods: {
+    pushList() {
+      const len = this.itemList.length
+      clearTimeout(this.timeout)
+      if (len < this.itemsLen) {
+        this.itemList.push(len)
+        this.timeout = setTimeout(this.pushList, 200)
+      } else this.timeout = setTimeout(() => (this.done = true), 150)
+    },
     confirm() {
       const buyerInfo = this.$store.state.buyerInfo
       const time = Date.now()
-      const orderId = { ...buyerInfo, ...{ createAt: time } }
-      const string = JSON.stringify(orderId)
-      const encode = btoa(string)
-      const decode = atob(encode)
-      console.log('encode', encode)
-      console.log('decode', decode)
       const items = this.items.map(item => {
         const price = this.$store.getters.itemPrice(item) * 1000
         const total = item.order * price
@@ -119,23 +114,30 @@ export default {
         }
       })
       const orderedItem = {
-        id: encode,
-        at: time,
-        confirmed: null,
-        packed: null,
-        taked: null,
-        trackingNo: null,
-        received: null,
-        payed: null,
-        payType: null,
-        done: false,
-        fault: false,
-        items: items,
-        shippingCost: this.shippingCost,
-        taxFee: this.taxFee,
-        totalAmount: this.totalOrderAmount.label,
-        totalPayment: this.finalOrderPayment,
+        ...{
+          _id: this.$store.state.buyerId + '@' + time,
+          _rev: '',
+          buyerId: this.$store.state.buyerId,
+          at: time,
+          received: null,
+          confirmed: null,
+          packed: null,
+          shiped: null,
+          trackingNo: null,
+          delivered: null,
+          payed: null,
+          payType: null,
+          done: false,
+          fault: false,
+          items: items,
+          shippingCost: this.shippingCost,
+          taxFee: this.taxFee,
+          totalAmount: this.totalOrderAmount.label,
+          totalPayment: this.finalOrderPayment,
+        },
+        ...buyerInfo,
       }
+      this.itemList = []
       this.$store.commit('pushOrdered', orderedItem)
       this.openModal = false
     },
@@ -158,22 +160,19 @@ export default {
       this.items.map(item => this.$store.commit('backToCart', item.id))
     },
     routerPush(path) {
+      this.itemList = []
       this.done = false
       this.show = false
-      setTimeout(() => this.$router.push(path), 350)
-    },
-    pushOrderItems() {
-      this.orderItems.push(this.items[this.count])
-      this.count++
-      if (this.orderItems.length < this.items.length) setTimeout(this.pushOrderItems, 150)
+      clearTimeout(this.timeout)
+      this.timeout = setTimeout(() => this.$router.push(path), 350)
     },
     isDel(bool) {
       this.del = bool
     },
   },
   watch: {
-    items: function() {
-      this.orderItems = this.items
+    itemsLen: function(len) {
+      this.itemList = this.itemList.slice(0, len)
     },
   },
   computed: {
@@ -205,6 +204,11 @@ export default {
         }, 0)
         const label = (sum * 1000).toLocaleString('vi') + 'đ'
         return { value: sum, label: label }
+      },
+    },
+    itemsLen: {
+      get() {
+        return this.items.length
       },
     },
     items: {

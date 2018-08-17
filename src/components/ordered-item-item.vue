@@ -2,10 +2,10 @@
   <div class="card">
     <div class="flex space-between">
       <div class="flex-10">
-        <ImageLoad class="fit" :src="item.img" :loading="loading" />
+        <ImageLoad class="fit" :url="item.img" :prod="item.name" :hex="item.hex"  />
       </div>
       <div class="col flex-85 align-end">
-        <div class="flex-1 align-end"> Name: {{item.name}} </div>
+        <div class="flex-1 align-end"> #{{item.name}} </div>
         <div class="flex-1 align-end"> {{item.info}} </div>
         <div class="flex-1 align-end"> {{item.amount}} </div>
       </div>
@@ -25,13 +25,7 @@ export default {
   },
   mounted() {},
   methods: {},
-  computed: {
-    loading: {
-      get() {
-        return this.$store.state.loading
-      },
-    },
-  },
+  computed: {},
 }
 </script>
 

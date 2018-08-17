@@ -3,6 +3,7 @@ import { Store, set, get } from 'idb-keyval'
 const idbstore = new Store('vms-state')
 
 import state from './state'
+
 import WW from 'worker-loader!../ww.worker.js'
 import IW from 'worker-loader!../iw.worker.js'
 
@@ -10,6 +11,7 @@ const persistPlugin = async store => {
   const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection
   console.log('connection', connection.type || connection.effectiveType)
   console.log('Plugin created')
+
   let savedState = await get('state', idbstore)
   if (!savedState) {
     setTimeout(() => store.commit('firstTime', false), 1 * 60 * 1000)
@@ -17,17 +19,37 @@ const persistPlugin = async store => {
   } else {
     savedState.firstTime = false
     savedState.worker = false
-    savedState.imgsWorker = false
+    savedState.imgWorker = false
     savedState.socket = false
     store.replaceState(savedState)
   }
 
-  store.subscribe(async (mutations, state) => {
+  const broadcast = new BroadcastChannel('vmBroadcast')
+  let committing = false
+  let worker
+
+  store.subscribe(async (mutation, state) => {
+    if (committing) return
     await set('state', state, idbstore)
+    broadcast.postMessage({ func: 'mutation', mutation: mutation })
+    if (worker) worker.postMessage({ func: 'mutation', mutation: mutation })
   })
 
+  broadcast.onmessage = e => {
+    const data = e.data
+    const func = data.func
+    const type = data.mutation.type
+    const payload = data.mutation.payload
+    switch (func) {
+      case 'mutation':
+        committing = true
+        store.commit(type, payload)
+        committing = false
+    }
+  }
+
   if (window.Worker) {
-    const worker = new WW()
+    worker = new WW()
     const imgWorker = new IW()
     let channel
 
@@ -44,10 +66,10 @@ const persistPlugin = async store => {
       store.commit(commit, data)
       switch (func) {
         case 'all-prod':
-          imgWorker.postMessage({ func: 'save', colors: e.data.data.colors })
+          imgWorker.postMessage({ func: 'save', colors: data.data.colors })
           break
         case 'prod':
-          imgWorker.postMessage({ func: 'check', colors: e.data.data.colors })
+          imgWorker.postMessage({ func: 'check', colors: data.data.colors })
           break
       }
     }
@@ -64,8 +86,9 @@ const persistPlugin = async store => {
     }
     imgWorker.onerror = () => {
       console.error('There is an error with imgWorker!')
-      store.commit('worker', { des: 'imgsWorker', value: false })
+      store.commit('worker', { des: 'imgWorker', value: false })
     }
+    document.addEventListener('visibilitychange', () => worker.postMessage({ func: 'closedByMe', value: document.hidden }), false)
   } else console.error(`worker not support!!`)
 }
 

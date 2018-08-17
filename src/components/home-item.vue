@@ -8,7 +8,7 @@
           <div>#{{name}}</div>
         </div>
         <transition name="fade" mode="out-in">
-          <div class="sale m-r-4 from-to-right" v-if="price.sale" :key="price.sale">{{price.sale}}</div>
+          <div class="sale m-r-4 from-to-right" v-if="info.sale" :key="info.sale">{{info.sale}}</div>
         </transition>
       </div>
 
@@ -28,14 +28,14 @@
 
       <!-- Image -->
       <transition name="fade" class="relative">
-        <ImageLoad class="from-to-top active-absolute fit center" :prod="name" :hex="imgHex" :key="imgHex" :url="price.img" @click.native="$emit('viewImage', item, imgHex, index)" />
+        <ImageLoad class="from-to-top active-absolute fit center" :prod="name" :hex="imgHex" :key="imgHex" :url="info.img" @click.native="$emit('viewImage', item, imgHex)" />
       </transition>
 
       <!-- Price -->
       <transition name="fade" mode="out-in">
-        <div class="price-wrap from-to-bot" :key="price.label">
-          <div class="price">{{price.label}}</div>
-          <div class="text-line-through text-grey m-l-4" v-if="price.maxPrice">{{price.maxPrice}}</div>
+        <div class="price-wrap from-to-bot" :key="info.price">
+          <div class="price">{{info.price}}</div>
+          <div class="text-line-through text-grey m-l-4" v-if="info.originalPrice">{{info.originalPrice}}</div>
         </div>
       </transition>
     </div>
@@ -53,8 +53,8 @@
     <!-- Size -->
     <transition name="fade" mode="out-in">
       <div v-if="operate.hex" class="flex m-b-8 to-right" key="btn">
-        <transition-group name="bounce" tag="div" class="flex">
-          <button v-for="s in colorObj.sizes" :key="s.size" @click="sizeBtnClick(s)" class="btn m-l-4 no-margin-first ani-move active-absolute" :class="{selected: s.size === operate.size, 'text-red': quantity(s).remain < 1}">{{s.size}}
+        <transition-group name="bounce" tag="div" class="flex wrap">
+          <button v-for="s in colorObj.sizes" :key="s.size" @click="sizeBtnClick(s)" class="btn m-r-4 ani-move active-absolute" :class="{selected: s.size === operate.size, 'text-red': quantity(s).remain < 1}">{{s.size}}
             <transition name="bounce">
               <div v-if="quantity(s)[operate.des]" :key="operate.des" class="badge bg" :class="badgeClass.bg">{{quantity(s)[operate.des]}}</div>
             </transition>
@@ -66,7 +66,7 @@
     </transition>
 
     <!-- Button -->
-    <div class="flex-1">
+    <div class="flex-1 align-end">
       <button :disabled="!valid.minus" :class="valid.minus ? 'yellow' : 'white'" class="btn minus bg" @click="change(-1, operate.des)" />
       <button :disabled="!valid.plus" :class="valid.plus ? 'green' : 'white'" class="btn flex-1 bg" @click="change(1, 'cart')">+Bag</button>
       <button :disabled="!valid.plus" :class="valid.plus ? 'cyan' : 'white'" class="btn flex-1 bg" @click="change(1, 'order')">+Order</button>
@@ -80,7 +80,7 @@ import ImageLoad from '@/components/image-load.vue'
 
 export default {
   name: 'home-item',
-  props: ['name', 'index'],
+  props: ['name'],
   components: { ImageLoad },
   created() {},
   mounted() {},
@@ -146,6 +146,8 @@ export default {
           ordered: 0,
           orderId: null,
           orderAt: null,
+          priceAtAdd: this.sizeObj.price,
+          saleAtAdd: this.sizeObj.sale,
           key: Date.now(),
         }
         this.$store.commit('pushBag', item)
@@ -181,29 +183,24 @@ export default {
         return { plus: plus, minus: minus }
       },
     },
-    price: {
+    info: {
       get() {
-        // const random = Math.floor(Math.random() * (1000 - 1)) + 1
-        let img = this.item ? (this.item.colors.length ? (this.item.colors[0].imgs ? this.item.colors[0].imgs[0] : '') : '') : ''
-        // const PRICE = this.item.colors.reduce
+        let img = this.item ? (this.item.colors.length ? (this.item.colors[0].imgs.length ? this.item.colors[0].imgs[0] : '') : '') : ''
+        let price = this.item.priceInfo || ''
+        let sale = this.item.saleInfo || ''
         if (this.colorObj) {
           img = this.colorObj.imgs[0]
-          if (this.sizeObj && this.sizeObj.sale) {
-            const value = this.item.price * ((100 - this.sizeObj.sale) / 100)
-            const sale = `-${this.sizeObj.sale}%`
-            const label = (value * 1000).toLocaleString('vn') + 'đ'
-            const maxPrice = (this.item.price * 1000).toLocaleString('vn') + 'đ'
-            return { label: label, value: value, sale: sale, img: img, maxPrice: maxPrice }
+          price = this.colorObj.priceInfo
+          sale = this.colorObj.saleInfo
+          if (this.sizeObj) {
+            sale = this.sizeObj.sale ? `-${this.sizeObj.sale}%` : 0
+            const value = this.sizeObj.price * ((100 - this.sizeObj.sale) / 100)
+            price = (value * 1000).toLocaleString('vn') + 'đ'
+            const originalPrice = this.sizeObj.sale ? (this.sizeObj.price * 1000).toLocaleString('vn') + 'đ' : 0
+            return { price: price, originalPrice: originalPrice, sale: sale, img: img }
           }
         }
-        const max = (this.item ? this.item.price * 1000 : 0).toLocaleString('vn') + 'đ'
-        if (!this.sizeObj && this.item && this.item.maxSale) {
-          const sale = `~${this.item.maxSale}%`
-          const min = (this.item.minPrice * 1000).toLocaleString('vn') + 'đ'
-          const label = `${min} - ${max}`
-          return { label: label, sale: sale, img: img }
-        }
-        return { label: max, value: this.item ? this.item.price : 0, img: img }
+        return { price: price, originalPrice: 0, sale: sale, img: img }
       },
     },
     sizeObj: {

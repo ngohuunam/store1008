@@ -8,11 +8,6 @@ export const colors = (state, getters) => id => {
   return prod ? prod.colors : []
 }
 
-export const prodRev = (state, getters) => id => {
-  const prod = getters.prod(id)
-  return prod ? prod._rev : null
-}
-
 export const currentItems = (state, getters) => id => {
   const prod = getters.prod(id)
   const currents = { items: [], colors: [] }
@@ -86,18 +81,17 @@ export const homeItemInfo = state => setName => {
 
 export const cartItemInfo = (state, getters) => item => {
   const prod = getters.prod(item.name)
-  const setPrice = prod.price
   const color = prod.colors.find(_color => _color.value === item.hex)
   const imgs = color.imgs
-  const size = color.sizes.find(_size => _size.label === item.size) || {
+  const sizeInfo = color.sizes.find(_size => _size.size === item.size) || {
     stock: 0,
     sale: 0,
     label: item.size,
+    price: 0,
   }
-  const price = setPrice * ((100 - size.sale) / 100)
   return {
-    ...size,
-    ...{ imgs: imgs, price: price, sizeInfo: prod.sizeInfo, colorInfo: prod.colorInfo },
+    ...sizeInfo,
+    ...{ imgs: imgs, sizeInfo: prod.sizeInfo, colorInfo: prod.colorInfo },
   }
 }
 

@@ -4,42 +4,40 @@ import { Store, get } from 'idb-keyval'
 
 const idbstore = new Store('vms-state')
 
-const remote = process.env.NODE_ENV === 'production' ? 'wss://busti.club/' : 'ws://51.15.68.18'
-// const remote = 'wss://192.168.1.200:5000'
-// const remote = 'wss://busti.club/'
-let socket
-let timeout
-let count = 1
-let port
+const remote = process.env.NODE_ENV === 'production' ? 'wss://busti.club/' : 'ws://user:pass@' + location.hostname + ':5000'
+let socket, reconnectWSTimeout, port, closedByMe
 
 const connect = () => {
-  socket = new WebSocket(remote)
+  fetch('https://api.ipify.org/')
+    .then(res => res.text())
+    .then(ip => {
+      console.log(ip)
+      socket = new WebSocket(remote, ip)
+      onEvent()
+    })
 }
 
 const reconnect = () => {
-  count = count + 1
-  clearTimeout(timeout)
-  timeout = setTimeout(() => {
+  console.log('reconnect')
+  clearTimeout(reconnectWSTimeout)
+  reconnectWSTimeout = setTimeout(() => {
     connect()
-    onEvent()
-  })
+    // onEvent()
+  }, 3000)
 }
 
 const onEvent = () => {
   ;['onmessage', 'onclose', 'onerror', 'onopen'].forEach(event => {
     socket[event] = mess => {
       const data = mess.data ? JSON.parse(mess.data) : { func: null }
-      // console.log('worker websocket received data', data)
+      console.log(`worker ws ${event} received data`, data)
       const func = data.func
       switch (event) {
         case 'onmessage':
           switch (func) {
             case 'connected':
-              console.log('sw connected', data)
+              console.log('ws connected', data)
               postMessage({ func: 'socket', commit: 'socket', value: true })
-              break
-            case 'list-imgs':
-              port.postMessage({ func: 'check', list: data.data.value })
               break
             case 'list':
               if (data.changed) {
@@ -61,25 +59,36 @@ const onEvent = () => {
           break
         case 'onopen':
           // console.log(`worker onopen ws`)
-          getList()
-          count = 1
-          clearTimeout(timeout)
+          if (closedByMe) closedByMe = false
+          else {
+            getList()
+            getOrdered()
+            clearTimeout(reconnectWSTimeout)
+          }
           break
         case 'onclose':
+          console.log('ws closed')
           postMessage({ func: 'socket', commit: 'socket', value: false })
-          reconnect()
+          if (!closedByMe) {
+            reconnect()
+          }
       }
     }
   })
 }
 connect()
-onEvent()
+// onEvent()
 
 //eslint-disable-next-line
-const sksend = (SEND, func) => {
+const sksend = (SEND, func, printConsole) => {
   SEND = JSON.stringify(SEND)
-  // console.log(`worker ${func} send ws mess:`, SEND)
+  if (printConsole) console.log(`worker ${func} send ws mess:`, SEND)
   socket.send(SEND)
+}
+
+const sendOrder = payload => {
+  const SEND = { type: 'query', func: 'pushOrdered', term: payload }
+  sksend(SEND, 'sendOrder', true)
 }
 
 const getList = () => {
@@ -92,6 +101,20 @@ const getList = () => {
       console.error('worker getList get state error:', e)
     })
     .finally(() => sksend(SEND, 'getList'))
+}
+
+const getOrdered = () => {
+  let SEND = { type: 'query', func: 'order', commit: 'orderedItem', buyerId: null, buyer: null, term: [] }
+  get('state', idbstore)
+    .then(state => {
+      SEND.term = state.ordered.length ? state.ordered : null
+      SEND.buyerId = state.buyerId
+      SEND.buyer = state.buyerInfo.phone && state.buyerInfo.pass ? state.buyerInfo : null
+      if (SEND.term || SEND.buyer) sksend(SEND, 'getOrdered', true)
+    })
+    .catch(e => {
+      console.error('worker getList get state error:', e)
+    })
 }
 
 const getProd = list => {
@@ -117,7 +140,7 @@ const getProd = list => {
 }
 
 const getItems = prodId => {
-  const SEND = { type: 'query', func: 'items', commit: 'pushItem', prodId: prodId, term: [] }
+  const SEND = { type: 'query', func: 'items', commit: 'loopItems', prodId: prodId, term: [] }
   get('state', idbstore)
     .then(state => {
       const prod = state.prods.find(_prod => _prod._id === prodId)
@@ -135,15 +158,33 @@ const getItems = prodId => {
     .finally(() => sksend(SEND, 'getItems'))
 }
 
+let closeWSTimeOut
+
 onmessage = e => {
   const data = e.data
   const func = data.func
   switch (func) {
+    case 'mutation':
+      switch (data.mutation.type) {
+        case 'pushOrdered':
+          sendOrder(data.mutation.payload)
+      }
+      break
     case 'channel':
       port = data.port
       port.postMessage('Hello from ww')
       port.onmessage = e => {
         console.log('iw send mess via channel', e)
+      }
+      break
+    case 'closedByMe':
+      closedByMe = true
+      if (data.value) {
+        clearTimeout(closeWSTimeOut)
+        if (socket && (socket.readyState === 1 || socket.readyState === 0)) closeWSTimeOut = setTimeout(() => socket.close(), 30000)
+      } else {
+        clearTimeout(closeWSTimeOut)
+        if (socket && (socket.readyState === 2 || socket.readyState === 3)) reconnect()
       }
   }
 }

@@ -1,11 +1,11 @@
 <template>
   <div class="card">
-    <button :disabled="done" :class="itemBg" class="btn flex-1 full-width header p-a-4 z-10" @click="expand = !expand">{{header}}</button>
+    <button :disabled="item.done" :class="itemBg" class="btn flex-1 full-width header p-a-4 z-10" @click="expand = !expand">{{header}}</button>
     <div class="flex">
-      <button :disabled="!item[_key] || done" class="btn flex-1" v-for="_key in keys" :key="_key">{{_key}}</button>
+      <button :disabled="!item[_key]" class="btn flex-1" v-for="_key in keys" :key="_key">{{_key}}</button>
     </div>
     <transition name="max-height">
-      <div v-if="expand && !done" class="body">
+      <div v-if="expand && !item.done" class="body">
         <OrderedItemItem v-for="child in item.items" :key="child.id" :item="child" />
         <div class="payment order">
           <div>
@@ -40,8 +40,7 @@ export default {
   data() {
     return {
       expand: false,
-      keys: ['confirmed', 'packed', 'taked', 'received'],
-      done: false,
+      keys: ['received', 'confirmed', 'packed', 'taked', 'delivered'],
     }
   },
   mounted() {},

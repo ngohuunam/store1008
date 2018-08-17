@@ -2,7 +2,7 @@
   <transition-group name="fade" tag="div" id="cart-page" :class="{expand: expand, 'ani-reverse': toOrder}">
 
     <!-- Notice when no cart item -->
-    <div v-if="show && !items.length" class="notice from-to-top" key="notice">
+    <div v-if="show && !itemsLen" class="notice from-to-top" key="notice">
       <h1 class="center">Please get some product</h1>
       <button class="btn home size-2" @click="routerPush('/')" />
       <button class="btn order size-2" :class="{fill: countOrder}" @click="routerPush('/order')">
@@ -13,7 +13,7 @@
     </div>
 
     <!-- Page header Sticky  -->
-    <div v-if="items.length && show" class="card sticky from-to-top" key="page-header">
+    <div v-if="itemsLen && show" class="card sticky from-to-top" key="page-header">
       <div class="flex align-center space-between">
         <div class="flex align-center">
           <button class="btn check" :class="{checked : allCartChecked}" @click="toggleCheckAll" />
@@ -36,7 +36,7 @@
     </div>
 
     <!-- List of cart items -->
-    <CartItem v-if="show" v-for="item in cartItems" :key="item.key" :item="item" class="ani-move active-absolute" @routerPush="routerPush" @spliceCart="() => toOrder = false" />
+    <CartItem v-for="n in itemList" :key="items[n].key" :item="items[n]" class="ani-move active-absolute" @routerPush="routerPush" @spliceCart="spliceCart" />
 
     <!-- Bottom sticky payment info -->
     <div v-if="done && expand" class="payment cart from-to-bot ani-move" key="payment-expand">
@@ -92,39 +92,40 @@ export default {
     return {
       expand: false,
       show: false,
-      cartItems: [],
-      count: 0,
       toOrder: false,
       done: false,
+      itemList: [],
     }
   },
   created() {},
   mounted() {
     this.show = true
-    if (this.items.length) {
-      this.unwatch = this.$watch('cartItems', function() {
-        if (this.cartItems.length === this.items.length) {
-          this.cartItems = this.items
-          setTimeout(() => (this.done = true), 300)
-          this.unwatch()
-        }
-      })
-      this.$nextTick(function() {
-        setTimeout(this.pushCartItems, 200)
-      })
+    this.timeout = null
+    if (this.itemsLen) {
+      this.pushList()
     }
   },
-  beforeDestroy() {},
+  beforeDestroy() {
+    clearTimeout(this.timeout)
+  },
   methods: {
+    spliceCart() {
+      this.toOrder = false
+    },
     routerPush(path) {
+      this.itemList = []
       this.done = false
       this.show = false
-      setTimeout(() => this.$router.push(path), 350)
+      clearTimeout(this.timeout)
+      this.timeout = setTimeout(() => this.$router.push(path), 350)
     },
-    pushCartItems() {
-      this.cartItems.push(this.items[this.count])
-      this.count++
-      if (this.cartItems.length < this.items.length) setTimeout(this.pushCartItems, 150)
+    pushList() {
+      const len = this.itemList.length
+      clearTimeout(this.timeout)
+      if (len < this.itemsLen) {
+        this.itemList.push(len)
+        this.timeout = setTimeout(this.pushList, 200)
+      } else this.timeout = setTimeout(() => (this.done = true), 150)
     },
     toggleCheckAll() {
       if (this.allCartChecked) this.$store.commit('toggleCheckAll', false)
@@ -136,12 +137,12 @@ export default {
     createOrder() {
       this.toOrder = true
       this.$store.commit('toOrder')
-      if (!this.items.length) this.routerPush('/order')
+      if (!this.itemsLen) this.routerPush('/order')
     },
   },
   watch: {
-    items: function() {
-      this.cartItems = this.items
+    itemsLen: function(len) {
+      this.itemList = this.itemList.slice(0, len)
     },
   },
   computed: {
@@ -186,6 +187,11 @@ export default {
         response.order.total = (response.order.sum * 1000).toLocaleString('vi') + 'đ'
         response.order.final = (response.order.sum ? ((response.order.sum + ship + fee) * 1000).toLocaleString('vi') : 0) + 'đ'
         return response
+      },
+    },
+    itemsLen: {
+      get() {
+        return this.items.length
       },
     },
     items: {

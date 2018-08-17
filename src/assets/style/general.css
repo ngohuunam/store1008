@@ -75,6 +75,9 @@ img {
 .overflow-hidden {
   overflow: hidden !important;
 }
+.overflow-auto {
+  overflow: auto !important;
+}
 .bg {
   transition: all 0.3s ease-in-out;
   color: white !important;

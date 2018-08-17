@@ -1,13 +1,13 @@
 <template>
   <transition-group name="fade" tag="div" id="ordered-page">
-    <!-- Notice when no order item -->
-    <div v-if="show && !items.length" class="notice from-to-top" key="notice">
+    <!-- Notice when no item -->
+    <div v-if="show && !itemsLen" class="notice from-to-top" key="notice">
       <h1 class="center">Please buy some product</h1>
       <button class="btn home size-2" @click="routerPush('/')" />
     </div>
 
-    <!-- Page Sticky use to select all or unselect all -->
-    <div v-if="items.length && show && !openModal" class="card sticky from-to-top" key="sticky">
+    <!-- Page Sticky contain general function -->
+    <div v-if="itemsLen && show" class="card sticky from-to-top" key="sticky">
       <div class="flex justify-end">
         <button class="flex-1 btn border-left" @click="routerPush('/')">
           <span class="btn home" /> Home </button>
@@ -15,72 +15,59 @@
     </div>
 
     <!-- List of ordered items -->
-    <OrderedItem v-if="show" v-for="item in orderedItems" :key="item.at" :item="item" />
-
-    <!-- Payment info -->
-    <!-- <Modal v-if="openModal" @close="() => openModal = false" key="modal" class="from-to-top" @confirm="confirm" /> -->
+    <OrderedItem v-for="n in itemList" :key="items[n].at" :item="items[n]" />
   </transition-group>
 </template>
 
 <script>
 import OrderedItem from '@/components/ordered-item.vue'
-import Modal from '@/components/modal-buyer-info.vue'
 
 export default {
   name: 'ordered',
-  components: { OrderedItem, Modal },
+  components: { OrderedItem },
   data() {
     return {
       show: false,
-      orderedItems: [],
-      count: 0,
-      done: false,
-      openModal: false,
+      itemList: [],
     }
   },
   created() {},
   mounted() {
     this.show = true
-    if (this.items.length) {
-      this.unwatch = this.$watch('orderedItems', function() {
-        if (this.orderedItems.length === this.items.length) {
-          this.orderedItems = this.items
-          setTimeout(() => (this.done = true), 200)
-          this.unwatch()
-        }
-      })
-      this.$nextTick(function() {
-        setTimeout(this.pushOrderedItems, 200)
-      })
+    this.timeout = null
+    if (this.itemsLen) {
+      this.pushList()
     }
   },
-  beforeDestroy() {},
+  beforeDestroy() {
+    clearTimeout(this.timeout)
+  },
   methods: {
+    pushList() {
+      const len = this.itemList.length
+      clearTimeout(this.timeout)
+      if (len < this.itemsLen) {
+        this.itemList.push(len)
+        this.timeout = setTimeout(this.pushList, 200)
+      } else this.timeout = setTimeout(() => (this.done = true), 150)
+    },
     routerPush(path) {
+      this.itemList = []
       this.done = false
       this.show = false
-      setTimeout(() => this.$router.push(path), 350)
-    },
-    pushOrderedItems() {
-      this.orderedItems.push(this.items[this.count])
-      this.count++
-      if (this.orderedItems.length < this.items.length) setTimeout(this.pushOrderedItems, 150)
+      clearTimeout(this.timeout)
+      this.timeout = setTimeout(() => this.$router.push(path), 350)
     },
   },
   watch: {
-    items: function() {
-      this.orderedItems = this.items
+    itemsLen: function(len) {
+      this.itemList = this.itemList.slice(0, len)
     },
   },
   computed: {
-    countOrdered: {
+    itemsLen: {
       get() {
-        return this.$store.getters.countBag.ordered
-      },
-    },
-    countCart: {
-      get() {
-        return this.$store.getters.countBag.cart
+        return this.items.length
       },
     },
     items: {

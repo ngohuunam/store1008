@@ -1,5 +1,24 @@
+import Vue from 'vue'
+
 export const socket = (state, data) => {
   state.socket = data.value
+}
+
+export const orderedItemProp = (state, data) => {
+  const id = data._id || data.id
+  const item = state.ordered.find(_item => _item._id === id)
+  item[data.des] = data.value
+  if (data.rev) item._rev = data.rev
+  if (data._id) item._id = data.id
+}
+
+export const orderedItem = (state, data) => {
+  data.data.map(doc => {
+    let index = state.ordered.findIndex(_item => _item._id === doc._id)
+    console.log(state.ordered[index])
+    if (index > -1) Vue.set(state.ordered, index, doc)
+    else state.ordered.push(doc)
+  })
 }
 
 export const worker = (state, data) => {
@@ -12,10 +31,19 @@ export const firstTime = (state, bool) => {
   state.firstTime = bool
 }
 
+export const fetchBuyerId = (state, messData) => {
+  state.buyerId = messData.buyerId
+}
+
 export const fetchList = (state, data) => {
   state.list = data.data
-  if (data.removed && data.removed.length) {
-    data.removed.map(name => (state.prods = state.prods.filter(prod => prod.name !== name)))
+  if (data.deleted) {
+    state.prods.reduceRight((pre, curr, i) => {
+      if (data.deleted.some(id => curr._id === id)) {
+        state.prods.spice(i, 1)
+      }
+      return pre
+    }, [])
   }
 }
 
@@ -25,10 +53,9 @@ export const pushList = (state, id) => {
 
 export const pushProd = (state, messData) => {
   const data = messData.data
-  let prod = state.prods.length ? state.prods.find(_prod => _prod.name === data._id) : null
+  let prod = state.prods.length ? state.prods.find(_prod => _prod._id === data._id) : null
   if (prod) prod = { ...prod, ...data }
   else state.prods.push(data)
-  if (data.list) state.list.push(data.list)
 }
 
 export const pushColor = (state, messData) => {
@@ -43,31 +70,48 @@ export const pushColor = (state, messData) => {
   }
 }
 
-export const pushItem = (state, messData) => {
-  const data = messData.data
-  const prod = state.prods.find(_prod => _prod._id === data.prod)
-  if (prod) {
-    const color = prod.colors.find(_color => _color.value === data.hex)
-    if (color) {
-      let currentSize = color.sizes.find(size => size._id === data._id)
-      if (currentSize) currentSize = data
-      else color.sizes.push(data)
-    }
-  }
+export const loopItems = (state, messData) => {
+  let newItems = messData.data
+  let deleted = messData.deleted
+  const prod = state.prods.find(_prod => _prod._id === newItems[0].prod)
+  prod.colors.map(color => {
+    color.sizes.reduceRight((res, size, i) => {
+      const deletedItemIndex = deleted.findIndex(delInfo => size._id === delInfo.id)
+      if (deletedItemIndex > -1) {
+        color.sizes.splice(i, 1)
+        deleted.splice(deletedItemIndex, 1)
+      } else {
+        newItems.reduceRight((_pre, newItem, j) => {
+          if (size._id === newItem._id) {
+            size = newItem
+            newItems.splice(j, 1)
+          }
+        })
+      }
+    })
+  })
 }
 
-export const pushItems = (state, messData) => {
+export const fetchAllItems = (state, messData) => {
+  let allItems = messData.data
+  const prod = state.prods.find(_prod => _prod._id === allItems[0].prod)
+  prod.colors.map(color => {
+    const sizes = allItems.reduceRight((pre, curr, i) => {
+      if (curr.hex === color.value) {
+        pre.push(curr)
+        allItems.splice(i, 1)
+      }
+      return pre
+    }, [])
+    color.sizes = sizes
+  })
+}
+
+export const emptyAllItems = (state, messData) => {
   const datas = messData.data
   const prod = state.prods.find(_prod => _prod._id === datas[0].prod)
   if (prod) {
-    datas.map(_d => {
-      const color = prod.colors.find(color => color.value === _d.hex)
-      if (color) {
-        let currentSize = color.sizes.find(size => size._id === _d._id)
-        if (currentSize) currentSize = _d
-        else color.sizes.push(_d)
-      }
-    })
+    prod.colors.map(color => (color.sizes = []))
   }
 }
 

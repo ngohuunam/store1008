@@ -1,7 +1,7 @@
 <template>
   <div id="app" :style="fontSize">
-    <transition-group name="mess" tag="div" class="col flex-1">
-      <div class="flex-1 center height-2 bg red relative p-a-4 m-b-4" v-for="(message, i) in mess" :key="message+i">
+    <transition-group name="mess" tag="div" class="col flex-1 relative">
+      <div class="flex-1 center height-2 bg red absolute p-a-4 m-b-4" v-for="(message, i) in mess" :key="message+i">
         <button class="btn close icon-white size-06 absolute at-top at-right" @click="$store.commit('spliceMess', i)" />{{message}}</div>
     </transition-group>
     <!-- <keep-alive include="home"> -->
@@ -20,6 +20,11 @@ export default {
   mounted() {
     const size = this.$el.clientWidth * 0.04
     this.fontSize = `font-size: ${size}px !important;`
+    // const remote = 'wss://busti.club/'
+    // this.socket = new WebSocket(remote)
+    // this.socket.onopen = () => {
+    //   console.log('open')
+    // }
   },
   data() {
     return {

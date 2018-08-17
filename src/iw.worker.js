@@ -1,4 +1,4 @@
-postMessage({ func: 'worker', commit: 'worker', des: 'imgsWorker', value: true })
+postMessage({ func: 'worker', commit: 'worker', des: 'imgWorker', value: true })
 
 import { Store, get, set } from 'idb-keyval'
 const idbstore = new Store('vms-imgs')

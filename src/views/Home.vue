@@ -14,15 +14,19 @@
             <div v-if="countBag.order" class="badge btn-classic">{{countBag.order}}</div>
           </transition>
         </button>
-        <button class="btn classic border left" @click="routerPush('/ordered')">Ordered</button>
+        <button class="btn classic border left" @click="routerPush('/ordered')">Ordered
+          <transition name="bounce">
+            <div v-if="countOrdered" class="badge btn-classic">{{countOrdered}}</div>
+          </transition>
+        </button>
       </div>
     </div>
 
     <!-- List items -->
-    <HomeItem v-if="show && prodLen > 4" v-for="(n, i) in homeList" :index="i" :key="n" :name="list[n]" :class="{'from-to-right': i % 2 === 1}" @viewImage="viewImage" @routerPush="routerPush" />
+    <HomeItem v-for="n in homeList" :key="n" :name="list[n]" :class="{'from-to-right': n % 2 === 1}" @viewImage="viewImage" @routerPush="routerPush" />
 
     <!-- Intersect -->
-    <Intersect v-if="show && prodLen > 4" @enter="load" key="intersect" />
+    <Intersect v-if="needLoad" @enter="load" key="intersect" :len="homeList.length" />
 
     <!-- Modal -->
     <div v-if="sliderData.length" key="modal" class="modal-mask from-to-top" @click="closeModal">
@@ -46,26 +50,22 @@ export default {
   data() {
     return {
       show: false,
+      needLoad: false,
       openModal: false,
       sliderData: [],
       activeData: '',
       done: false,
-      itemIndex: null,
       homeList: [],
-      sliderProd: '',
     }
   },
   mounted() {
+    this.timeout = null
     this.$nextTick(function() {
       this.show = true
+      this.needLoad = true
       // this.load()
     })
   },
-  // watch: {
-  //   list: function() {
-  //     this.load()
-  //   },
-  // },
   methods: {
     closeModal() {
       this.sliderData = []
@@ -73,36 +73,25 @@ export default {
     },
     load() {
       const len = this.homeList.length
-      if (this.list.length && this.list.length > len) {
-        const arrayLen = this.list.length - len > 4 ? 4 : this.list.length - len
-        const map = new Array(arrayLen).fill('o')
-        map.map((ele, i) => {
-          setTimeout(() => {
-            const no = this.homeList.length
-            // console.log('len', len)
-            // console.log('no', no)
-            if (len < this.list.length) this.homeList.push(no)
-            // console.log('this.homeList', this.homeList)
-          }, 400 * i)
-        })
-      }
+      if (len < this.list.length) this.homeList.push(len)
+      else this.needLoad = false
     },
     navTo(prod, hex) {
       this.$store.commit('operate', { name: prod, value: { hex: hex } })
     },
     shuffle() {
-      this.homeItems = this.homeItems
+      this.homeList = this.homeList
         .map(x => [Math.random(), x])
         .sort(([a], [b]) => a - b)
         .map(([, x]) => x)
     },
     routerPush(path) {
+      this.homeList = []
       this.show = false
-      setTimeout(() => this.$router.push(path), 350)
+      this.timeout = setTimeout(() => this.$router.push(path), 350)
     },
-    viewImage(item, hex, itemIndex) {
+    viewImage(item, hex) {
       document.documentElement.style.overflow = 'hidden'
-      this.itemIndex = itemIndex
       this.sliderProd = item._id
       this.sliderData = item.colors.map(color => {
         return {
@@ -113,8 +102,15 @@ export default {
       this.activeData = item.colors.findIndex(color => color.value === hex)
     },
   },
-  beforeDestroy() {},
+  beforeDestroy() {
+    clearTimeout(this.timeout)
+  },
   computed: {
+    countOrdered: {
+      get() {
+        return this.$store.state.ordered.length
+      },
+    },
     countBag: {
       get() {
         return this.$store.getters.countBag
@@ -123,11 +119,6 @@ export default {
     list: {
       get() {
         return this.$store.state.list.value
-      },
-    },
-    prodLen: {
-      get() {
-        return this.$store.state.prods.length
       },
     },
   },
@@ -140,6 +131,7 @@ export default {
   flex-wrap: wrap;
   justify-content: space-between;
   position: relative;
-  /* min-height: 100vh; */
+  min-height: 10vh;
+  padding-bottom: 40px;
 }
 </style>
