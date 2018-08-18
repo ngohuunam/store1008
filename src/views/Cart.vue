@@ -2,7 +2,7 @@
   <transition-group name="fade" tag="div" id="cart-page" :class="{expand: expand, 'ani-reverse': toOrder}">
 
     <!-- Notice when no cart item -->
-    <div v-if="show && !itemsLen" class="notice from-to-top" key="notice">
+    <div v-if="show && !items.length" class="notice from-to-top" key="notice">
       <h1 class="center">Please get some product</h1>
       <button class="btn home size-2" @click="routerPush('/')" />
       <button class="btn order size-2" :class="{fill: countOrder}" @click="routerPush('/order')">
@@ -13,7 +13,7 @@
     </div>
 
     <!-- Page header Sticky  -->
-    <div v-if="itemsLen && show" class="card sticky from-to-top" key="page-header">
+    <div v-if="items.length && show" class="card sticky from-to-top" key="page-header">
       <div class="flex align-center space-between">
         <div class="flex align-center">
           <button class="btn check" :class="{checked : allCartChecked}" @click="toggleCheckAll" />
@@ -101,7 +101,7 @@ export default {
   mounted() {
     this.show = true
     this.timeout = null
-    if (this.itemsLen) {
+    if (this.items.length) {
       this.pushList()
     }
   },
@@ -122,7 +122,7 @@ export default {
     pushList() {
       const len = this.itemList.length
       clearTimeout(this.timeout)
-      if (len < this.itemsLen) {
+      if (len < this.items.length) {
         this.itemList.push(len)
         this.timeout = setTimeout(this.pushList, 200)
       } else this.timeout = setTimeout(() => (this.done = true), 150)
@@ -137,12 +137,7 @@ export default {
     createOrder() {
       this.toOrder = true
       this.$store.commit('toOrder')
-      if (!this.itemsLen) this.routerPush('/order')
-    },
-  },
-  watch: {
-    itemsLen: function(len) {
-      this.itemList = this.itemList.slice(0, len)
+      if (!this.items.length) this.routerPush('/order')
     },
   },
   computed: {
@@ -187,11 +182,6 @@ export default {
         response.order.total = (response.order.sum * 1000).toLocaleString('vi') + 'đ'
         response.order.final = (response.order.sum ? ((response.order.sum + ship + fee) * 1000).toLocaleString('vi') : 0) + 'đ'
         return response
-      },
-    },
-    itemsLen: {
-      get() {
-        return this.items.length
       },
     },
     items: {

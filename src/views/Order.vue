@@ -1,7 +1,7 @@
 <template>
   <transition-group name="fade" tag="div" id="order-page" :class="{'ani-reverse': del}">
     <!-- Notice when no order item -->
-    <div v-if="show && !itemsLen" class="notice from-to-top" key="notice">
+    <div v-if="show && !items.length" class="notice from-to-top" key="notice">
       <h1 class="center">Please get some product</h1>
       <button class="btn home size-2" @click="routerPush('/')" />
       <button class="btn bag size-2" :class="{fill: countCart}" @click="routerPush('/cart')">
@@ -13,7 +13,7 @@
     </div>
 
     <!-- Page Sticky use to select all or unselect all -->
-    <div v-if="itemsLen && show && !openModal" class="card sticky from-to-top" key="sticky">
+    <div v-if="items.length && show && !openModal" class="card sticky from-to-top" key="sticky">
       <div class="flex justify-end">
         <button class="flex-1 btn" @click="backAllToCart">
           <span class="btn arrow-left" /> All cart </button>
@@ -35,7 +35,7 @@
     <OrderItem v-for="n in itemList" class="ani-move active-absolute" :key="items[n].key" :item="items[n]" @isDel="isDel" />
 
     <!-- Payment info -->
-    <div v-if="done && itemsLen" class="payment order from-to-bot ani-move" key="payment">
+    <div v-if="done && items.length" class="payment order from-to-bot ani-move" key="payment">
       <div>
         <div>Total Amount:</div>
         <div>{{totalOrderAmount.label}}</div>
@@ -78,7 +78,7 @@ export default {
   mounted() {
     this.show = true
     this.timeout = null
-    if (this.itemsLen) {
+    if (this.items.length) {
       this.pushList()
     }
   },
@@ -89,7 +89,7 @@ export default {
     pushList() {
       const len = this.itemList.length
       clearTimeout(this.timeout)
-      if (len < this.itemsLen) {
+      if (len < this.items.length) {
         this.itemList.push(len)
         this.timeout = setTimeout(this.pushList, 200)
       } else this.timeout = setTimeout(() => (this.done = true), 150)
@@ -170,11 +170,6 @@ export default {
       this.del = bool
     },
   },
-  watch: {
-    itemsLen: function(len) {
-      this.itemList = this.itemList.slice(0, len)
-    },
-  },
   computed: {
     countCart: {
       get() {
@@ -204,11 +199,6 @@ export default {
         }, 0)
         const label = (sum * 1000).toLocaleString('vi') + 'đ'
         return { value: sum, label: label }
-      },
-    },
-    itemsLen: {
-      get() {
-        return this.items.length
       },
     },
     items: {

@@ -5,13 +5,17 @@ import { Store, get } from 'idb-keyval'
 const idbstore = new Store('vms-state')
 
 const remote = process.env.NODE_ENV === 'production' ? 'wss://busti.club/' : 'ws://user:pass@' + location.hostname + ':5000'
-let socket, reconnectWSTimeout, port, closedByMe
+let socket, reconnectWSTimeout, port, closedByMe, ip
 
 const connect = () => {
   fetch('https://api.ipify.org/')
     .then(res => res.text())
-    .then(ip => {
-      console.log(ip)
+    .catch(e => console.error(e))
+    .then(_ip => {
+      console.log(_ip)
+      ip = _ip
+    })
+    .finally(() => {
       socket = new WebSocket(remote, ip)
       onEvent()
     })
@@ -181,7 +185,7 @@ onmessage = e => {
       closedByMe = true
       if (data.value) {
         clearTimeout(closeWSTimeOut)
-        if (socket && (socket.readyState === 1 || socket.readyState === 0)) closeWSTimeOut = setTimeout(() => socket.close(), 30000)
+        if (socket && (socket.readyState === 1 || socket.readyState === 0)) closeWSTimeOut = setTimeout(() => socket.close(), 3 * 60 * 1000)
       } else {
         clearTimeout(closeWSTimeOut)
         if (socket && (socket.readyState === 2 || socket.readyState === 3)) reconnect()
