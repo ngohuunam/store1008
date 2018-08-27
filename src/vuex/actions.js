@@ -19,6 +19,5 @@ export const getBlob = (context, key) => {
 }
 
 export const saveBlob = (context, info) => {
-  console.log('action saveBlob', info.key)
   return set(info.key, info.value, idbstore)
 }

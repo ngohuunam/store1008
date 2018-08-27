@@ -1,30 +1,27 @@
 <template>
   <div id="app" :style="fontSize">
-    <transition-group name="mess" tag="div" class="col flex-1 relative">
-      <div class="flex-1 center height-2 bg red absolute p-a-4 m-b-4" v-for="(message, i) in mess" :key="message+i">
+    <transition-group name="mess" tag="div" class="col flex-1 absolute full-width z-top">
+      <div class="flex-1 center height-2 bg red p-a-4 m-b-4 relative" v-for="(message, i) in mess" :key="message+i">
         <button class="btn close icon-white size-06 absolute at-top at-right" @click="$store.commit('spliceMess', i)" />{{message}}</div>
     </transition-group>
-    <!-- <keep-alive include="home"> -->
-    <router-view/>
-    <!-- </keep-alive> -->
+    <transition name="fade">
+      <Modal v-if="$store.state.sliderData" />
+    </transition>
+    <keep-alive include="home-item">
+      <router-view/>
+    </keep-alive>
   </div>
 </template>
 
 <script>
+import Modal from '@/components/modal-slider.vue'
 export default {
   name: 'App',
-  components: {},
-  created() {
-    console.log('App created')
-  },
+  components: { Modal },
+  created() {},
   mounted() {
     const size = this.$el.clientWidth * 0.04
     this.fontSize = `font-size: ${size}px !important;`
-    // const remote = 'wss://busti.club/'
-    // this.socket = new WebSocket(remote)
-    // this.socket.onopen = () => {
-    //   console.log('open')
-    // }
   },
   data() {
     return {
@@ -52,5 +49,6 @@ export default {
   margin: 0 auto;
   overflow-x: hidden;
   padding-top: 2.5em;
+  position: relative;
 }
 </style>

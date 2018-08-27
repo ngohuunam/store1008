@@ -14,10 +14,11 @@ const persistPlugin = async store => {
 
   let savedState = await get('state', idbstore)
   if (!savedState) {
-    setTimeout(() => store.commit('firstTime', false), 1 * 60 * 1000)
+    setTimeout(() => store.commit('firstTime', false), 20 * 1000)
     await set('state', state, idbstore)
   } else {
     savedState.firstTime = false
+    savedState.sliderData = null
     savedState.worker = false
     savedState.imgWorker = false
     savedState.socket = false
@@ -31,8 +32,16 @@ const persistPlugin = async store => {
   store.subscribe(async (mutation, state) => {
     if (committing) return
     await set('state', state, idbstore)
-    broadcast.postMessage({ func: 'mutation', mutation: mutation })
-    if (worker) worker.postMessage({ func: 'mutation', mutation: mutation })
+    broadcast.postMessage(mutation)
+    if (worker) {
+      switch (mutation.type) {
+        case 'pushOrdered':
+        case 'login':
+        case 'register':
+        case 'logout':
+          worker.postMessage(mutation)
+      }
+    }
   })
 
   broadcast.onmessage = e => {
@@ -55,15 +64,17 @@ const persistPlugin = async store => {
 
     if (imgWorker && worker) {
       channel = new MessageChannel()
-      imgWorker.postMessage({ func: 'channel', port: channel.port1 }, [channel.port1])
-      worker.postMessage({ func: 'channel', port: channel.port2 }, [channel.port2])
+      imgWorker.postMessage({ type: 'channel', port: channel.port1 }, [channel.port1])
+      worker.postMessage({ type: 'channel', port: channel.port2 }, [channel.port2])
     }
 
     worker.onmessage = e => {
       const data = e.data
       const commit = data.commit
+      const dispatch = data.dispatch
       const func = data.func
-      store.commit(commit, data)
+      if (commit) store.commit(commit, data)
+      if (dispatch) store.dispatch(dispatch, data.payload)
       switch (func) {
         case 'all-prod':
           imgWorker.postMessage({ func: 'save', colors: data.data.colors })
@@ -88,7 +99,7 @@ const persistPlugin = async store => {
       console.error('There is an error with imgWorker!')
       store.commit('worker', { des: 'imgWorker', value: false })
     }
-    document.addEventListener('visibilitychange', () => worker.postMessage({ func: 'closedByMe', value: document.hidden }), false)
+    document.addEventListener('visibilitychange', () => worker.postMessage({ type: 'closedByMe', value: document.hidden }), false)
   } else console.error(`worker not support!!`)
 }
 

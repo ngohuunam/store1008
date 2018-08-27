@@ -3,6 +3,7 @@ postMessage({ func: 'worker', commit: 'worker', des: 'imgWorker', value: true })
 import { Store, get, set } from 'idb-keyval'
 const idbstore = new Store('vms-imgs')
 let port
+const remote = 'https://res.cloudinary.com/dgprt0eay/image/upload/'
 
 onmessage = e => {
   // console.log('img worker data from message', e)
@@ -39,51 +40,24 @@ const checkImgs = colors => {
 }
 
 const checkImg = color => {
-  color.imgs.forEach(url => {
-    const from = url.lastIndexOf('/') + 1
-    const to = url.lastIndexOf('.')
-    const key = url.slice(from, to)
-    get(key, idbstore)
-      .then(value => {
-        const savedBlob = value.blob
-        const saveReader = new FileReader()
-        let savedBlobAsText
-        saveReader.onload = () => {
-          savedBlobAsText = saveReader.result
-        }
-        saveReader.readAsText(savedBlob)
-
-        fetchURL(url)
-          .then(blob => {
-            let fetchBlobAsText
-            const reader = new FileReader()
-            reader.onload = () => {
-              fetchBlobAsText = reader.result
-            }
-            reader.readAsText(blob)
-            if (savedBlobAsText === fetchBlobAsText) {
-              handleResult({ task: 'checkImg', status: 'ok', prod: color.prod, hex: color.value, key: key })
-            } else
-              saveBlob(color.id, blob, url)
-                .then(_key => handleResult({ task: 'checkImg', status: 'saveBlob ok', prod: color.prod, hex: color.value, _key: _key, key: key }))
-                .catch(e => handleError({ task: 'checkImg', status: 'saveBlob error', e: e, prod: color.prod, hex: color.value, key: key }))
-          })
-          .catch(e => handleError({ task: 'checkImg', status: 'error', e: e, prod: color.prod, hex: color.value, key: key }))
-      })
+  color.imgs.forEach(pid => {
+    get(pid, idbstore)
+      .then(() => handleResult({ task: 'checkImg', status: 'ok', prod: color.prod, hex: color.value, key: pid }))
       .catch(e => {
-        handleError({ task: 'checkImg', status: 'get keyvalue error', e: e, prod: color.prod, hex: color.value, key: key })
+        handleError({ task: 'checkImg', status: 'get keyvalue error', e: e, prod: color.prod, hex: color.value, key: pid })
         saveImg(color)
       })
   })
 }
 
 const saveImg = color => {
-  color.imgs.forEach(url => {
+  color.imgs.forEach(pid => {
+    const url = remote + pid
     fetchURL(url)
       .then(blob => {
-        saveBlob(color.id, blob, url)
+        saveBlob(pid, color.prod, color.value, blob)
           .then(key => handleResult({ task: 'saveImg', status: 'ok', prod: color.prod, hex: color.value, key: key }))
-          .catch(e => handleError({ task: 'saveBlob', status: 'error', e: e, prod: color.prod, hex: color.value, url: url }))
+          .catch(e => handleError({ task: 'saveBlob', status: 'error', e: e, prod: color.prod, hex: color.value, pid: pid }))
       })
       .catch(e => handleError({ task: 'fetchURL', status: 'error', e: e, prod: color.prod, hex: color.value, url: url }))
   })
@@ -93,14 +67,11 @@ const saveImgs = colors => {
   colors.forEach(color => saveImg(color))
 }
 
-const saveBlob = (id, blob, url) => {
+const saveBlob = (pid, prod, hex, blob) => {
   return new Promise((resolve, reject) => {
-    const from = url.lastIndexOf('/') + 1
-    const to = url.lastIndexOf('.')
-    const key = url.slice(from, to)
-    const value = { id: id, blob: blob, url: url }
-    set(key, value, idbstore)
-      .then(() => resolve(key))
+    const value = { prod: prod, hex: hex, blob: blob }
+    set(pid, value, idbstore)
+      .then(() => resolve(pid))
       .catch(e => reject('set keyvalue error: ' + e))
   })
 }

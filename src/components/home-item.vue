@@ -5,7 +5,7 @@
       <div class="absolute at-top flex space-between align-center height-25 full-width z-10">
         <div class="flex-1 align-center">
           <button class="btn star" :class="{fill : hasStar}" @click="toggleStar" />
-          <div>#{{name}}</div>
+          <div>#{{prodId}}</div>
         </div>
         <transition name="fade" mode="out-in">
           <div class="sale m-r-4 from-to-right" v-if="info.sale" :key="info.sale">{{info.sale}}</div>
@@ -28,7 +28,7 @@
 
       <!-- Image -->
       <transition name="fade" class="relative">
-        <ImageLoad class="from-to-top active-absolute fit center" :prod="name" :hex="imgHex" :key="imgHex" :url="info.img" @click.native="$emit('viewImage', item, imgHex)" />
+        <ImageLoad class="from-to-top active-absolute fit center" :prodId="prodId" :hex="imgHex" :key="imgHex" :pid="img" @click.native="$store.commit('sliderData', {prodId: prodId, hex: imgHex, img_i: 0})" />
       </transition>
 
       <!-- Price -->
@@ -80,7 +80,7 @@ import ImageLoad from '@/components/image-load.vue'
 
 export default {
   name: 'home-item',
-  props: ['name'],
+  props: ['prodId'],
   components: { ImageLoad },
   created() {},
   mounted() {},
@@ -100,7 +100,7 @@ export default {
       this.$emit('routerPush', '/order')
     },
     quantity(size) {
-      const id = `${this.name}-${this.operate.hex}_${size.size}`
+      const id = `${this.prodId}-${this.operate.hex}_${size.size}`
       const quantity = this.$store.getters.quantity(id)
       const remain = size.stock - quantity.cart - quantity.order
       return { ...quantity, ...{ remain: remain } }
@@ -109,14 +109,14 @@ export default {
       return this.item.colors.some(color => color.hex === hex && color.sizes.some(size => size.sale))
     },
     countBagByHex(hex) {
-      const term = `${this.name}-${hex}_`
+      const term = `${this.prodId}-${hex}_`
       return this.$store.getters.countBagByTerm(term)
     },
     toggleStar() {
-      const id = `${this.name}-${this.operate.hex}_${this.operate.size}`
+      const id = `${this.prodId}-${this.operate.hex}_${this.operate.size}`
       const info = {
         id: id,
-        name: this.name,
+        prodId: this.prodId,
         hex: this.operate.hex,
         size: this.operate.size,
       }
@@ -124,7 +124,7 @@ export default {
     },
     change(amount, des) {
       this.operate = { des: des }
-      const id = `${this.name}-${this.operate.hex}_${this.operate.size}`
+      const id = `${this.prodId}-${this.operate.hex}_${this.operate.size}`
       const checkBag = this.$store.getters.quantity(id)
       if (checkBag.has) {
         const info = {
@@ -136,16 +136,16 @@ export default {
       } else {
         const item = {
           id: id,
-          name: this.name,
+          _id: this.sizeObj._id,
+          _rev: this.sizeObj._rev,
+          prodId: this.prodId,
           hex: this.operate.hex,
           label: this.colorObj.label,
           size: this.operate.size,
+          img_i: this.operate.img_i,
           cart: des === 'cart' ? amount : 0,
           order: des === 'order' ? amount : 0,
           check: false,
-          ordered: 0,
-          orderId: null,
-          orderAt: null,
           priceAtAdd: this.sizeObj.price,
           saleAtAdd: this.sizeObj.sale,
           key: Date.now(),
@@ -170,10 +170,10 @@ export default {
     },
     operate: {
       get() {
-        return this.$store.getters.homeItemInfo(this.name)
+        return this.$store.getters.homeItemInfo(this.prodId)
       },
       set(value) {
-        this.$store.commit('operate', { name: this.name, value: value })
+        this.$store.commit('operate', { prodId: this.prodId, value: value })
       },
     },
     valid: {
@@ -185,11 +185,9 @@ export default {
     },
     info: {
       get() {
-        let img = this.item ? (this.item.colors.length ? (this.item.colors[0].imgs.length ? this.item.colors[0].imgs[0] : '') : '') : ''
         let price = this.item.priceInfo || ''
         let sale = this.item.saleInfo || ''
         if (this.colorObj) {
-          img = this.colorObj.imgs[0]
           price = this.colorObj.priceInfo
           sale = this.colorObj.saleInfo
           if (this.sizeObj) {
@@ -197,10 +195,15 @@ export default {
             const value = this.sizeObj.price * ((100 - this.sizeObj.sale) / 100)
             price = (value * 1000).toLocaleString('vn') + 'đ'
             const originalPrice = this.sizeObj.sale ? (this.sizeObj.price * 1000).toLocaleString('vn') + 'đ' : 0
-            return { price: price, originalPrice: originalPrice, sale: sale, img: img }
+            return { price: price, originalPrice: originalPrice, sale: sale }
           }
         }
-        return { price: price, originalPrice: 0, sale: sale, img: img }
+        return { price: price, originalPrice: 0, sale: sale }
+      },
+    },
+    img: {
+      get() {
+        return this.colorObj ? this.colorObj.imgs[this.operate.img_i] : this.item.colors[0].imgs[0]
       },
     },
     sizeObj: {
@@ -215,17 +218,17 @@ export default {
     },
     countBagBySet: {
       get() {
-        return this.$store.getters.countBagByTerm(`${this.name}-`)
+        return this.$store.getters.countBagByTerm(`${this.prodId}-`)
       },
     },
     hasStar: {
       get() {
-        return this.$store.getters.hasStar(`${this.name}-`)
+        return this.$store.getters.hasStar(`${this.prodId}-`)
       },
     },
     item: {
       get() {
-        return this.$store.getters.prod(this.name)
+        return this.$store.getters.prod(this.prodId)
       },
     },
   },

@@ -5,24 +5,24 @@
       <div class="form">
         <h2> Your information</h2>
         <div>
-          <div class="flex-30">Name: *</div>
-          <div class="flex-1"><input required :value="buyerInfo.name" @change="$store.commit('setBuyerInfo', { name: $event.target.value })" /></div>
+          <label for="name" class="flex-30">Name: *</label>
+          <div class="flex-1"><input name="name" required :value="buyerInfo.name" @input="$store.commit('setBuyerInfo', { name: $event.target.value })" /></div>
         </div>
         <div>
-          <div class="flex-30">Address: *</div>
-          <div class="flex-1"><input required :value="buyerInfo.address" @change="$store.commit('setBuyerInfo', { address: $event.target.value })" /></div>
+          <label for="address" class="flex-30">Address: *</label>
+          <div class="flex-1"><input name="address" required :value="buyerInfo.address" @input="$store.commit('setBuyerInfo', { address: $event.target.value })" /></div>
         </div>
         <div>
-          <div class="flex-30">Phone: *</div>
-          <div class="flex-1"><input type="tel" required :value="buyerInfo.phone" @change="$store.commit('setBuyerInfo', { phone: $event.target.value })" /></div>
+          <label for="phone" class="flex-30">Phone: *</label>
+          <div class="flex-1"><input type="tel" name="phone" required :value="buyerInfo.phone" @input="$store.commit('setBuyerInfo', { phone: $event.target.value })" /></div>
         </div>
         <div>
-          <div class="flex-30">Email: *</div>
-          <div class="flex-1"><input type="email" required :value="buyerInfo.email" @change="$store.commit('setBuyerInfo', { email: $event.target.value })" /></div>
+          <label for="email" class="flex-30">Email: *</label>
+          <div class="flex-1"><input type="email" pattern="[a-zA-Z0-9.!#$%&amp;’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)+" name="email" required :value="buyerInfo.email" @input="$store.commit('setBuyerInfo', { email: $event.target.value })" /></div>
         </div>
         <div>
-          <div class="flex-30">Password: *</div>
-          <div class="flex-1"><input type="password" required :value="buyerInfo.pass" @change="$store.commit('setBuyerInfo', { pass: $event.target.value })" /></div>
+          <label for="pass" class="flex-30">Password: *</label>
+          <div class="flex-1"><input type="password" name="pass" required :value="buyerInfo.pass" @input="$store.commit('setBuyerInfo', { pass: $event.target.value })" /></div>
         </div>
         <button :disabled="!valid" class="btn full-width bg green" @click="$emit('confirm')"> Confirm </button>
       </div>

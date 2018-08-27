@@ -5,7 +5,7 @@
     <div class="flex space-between">
       <div class="flex align-center">
         <button class="btn check" :class="{checked : item.check}" @click="$store.commit('toggleCheck', item.id)" />
-        <div>#{{item.name}}</div>
+        <div>#{{item.prodId}}</div>
       </div>
       <div class="flex">
         <div class="center text-red" v-if="item.order">Ordered</div>
@@ -21,7 +21,7 @@
     <div class="flex space-between">
       <!-- Slider image left side area -->
       <div class="flex-30">
-        <Slider :datas="sliderData" :nav="true" />
+        <ImageLoad class="from-to-top active-absolute fit center" :prodId="item.prodId" :hex="item.hex" :pid="info.img" :key="info.img" @click.native="openSlider" />
       </div>
 
       <!-- right side area -->
@@ -30,7 +30,7 @@
         <!-- Color select row -->
         <div class="flex-1 align-center">
           <div class="flex-40">Color: </div>
-          <select :value="item.hex" class="flex-1" @change="cartChangeProperty($event.target.value, item.size, true)">
+          <select :value="item.hex" class="flex-1" @change="cartChangeProperty($event.target.value, item.size)">
             <option disabled value="">Select one</option>
             <option v-for="c_info in info.colorInfo" :key="c_info.value" :value="c_info.value">{{c_info.label}}</option>
           </select>
@@ -39,7 +39,7 @@
         <!-- Size select row -->
         <div class="flex-1 align-center">
           <div class="flex-40">Size: </div>
-          <select :value="item.size" class="flex-1" @change="cartChangeProperty(item.hex, $event.target.value, false)">
+          <select :value="item.size" class="flex-1" @change="cartChangeProperty(item.hex, $event.target.value)">
             <option disabled value="">Select one</option>
             <option v-for="s_info in info.sizeInfo" :key="s_info.label" :value="s_info.label">{{s_info.label}} - {{s_info.value}}</option>
           </select>
@@ -78,12 +78,12 @@
 </template>
 
 <script>
-import Slider from '@/components/img-slider.vue'
+import ImageLoad from '@/components/image-load.vue'
 
 export default {
   name: 'cart-item',
-  props: ['item'],
-  components: { Slider },
+  props: ['item', 'index'],
+  components: { ImageLoad },
   data() {
     return {}
   },
@@ -92,28 +92,38 @@ export default {
     toggleStar() {
       const info = {
         id: this.item.id,
-        name: this.item.name,
-        color: this.item.hex,
+        prodId: this.item.prodId,
+        hex: this.item.hex,
         size: this.item.size,
       }
       this.$store.commit('toggleStar', info)
     },
-    cartChangeProperty(hex, size, isColor) {
-      const newId = `${this.item.name}-${hex}_${size}`
+    openSlider() {
       const currentId = this.item.id
       const info = {
-        newId: newId,
+        newId: '',
         currentId: currentId,
-        name: this.item.name,
+        prodId: this.item.prodId,
+        hex: this.item.hex,
+        size: this.item.size,
+        quantity: this.item.cart,
+      }
+      this.$store.commit('sliderData', { prodId: this.item.prodId, hex: this.item.hex, img_i: this.item.img_i, info: info })
+    },
+    cartChangeProperty(hex, size) {
+      const newId = `${this.item.prodId}-${hex}_${size}`
+      const info = {
+        newId: newId,
+        currentId: this.item.id,
+        prodId: this.item.prodId,
         hex: hex,
         size: size,
         quantity: this.item.cart,
-        isColor: isColor,
       }
       this.$store.commit('cartChangeProperty', info)
     },
     spliceCart() {
-      this.$emit('spliceCart')
+      this.$emit('spliceCart', this.index)
       this.changeCart(-this.item.cart)
     },
     changeCart(amount) {
@@ -128,7 +138,7 @@ export default {
   computed: {
     remain: {
       get() {
-        return this.info.stock - this.item.order - this.item.ordered
+        return this.$store.getters.remain(this.item)
       },
     },
     currentValue: {
@@ -154,11 +164,6 @@ export default {
     hasStar: {
       get() {
         return this.$store.getters.hasStar(this.item.id)
-      },
-    },
-    sliderData: {
-      get() {
-        return [{ hex: this.item.hex, imgs: this.info.imgs }]
       },
     },
     info: {

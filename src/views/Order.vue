@@ -32,7 +32,7 @@
     </div>
 
     <!-- List of order items -->
-    <OrderItem v-for="n in itemList" class="ani-move active-absolute" :key="items[n].key" :item="items[n]" @isDel="isDel" />
+    <OrderItem v-for="(n, i) in itemList" class="ani-move active-absolute" :key="items[n].key" :item="items[n]" :index="i" @splice="splice" />
 
     <!-- Payment info -->
     <div v-if="done && items.length" class="payment order from-to-bot ani-move" key="payment">
@@ -95,47 +95,53 @@ export default {
       } else this.timeout = setTimeout(() => (this.done = true), 150)
     },
     confirm() {
-      const buyerInfo = this.$store.state.buyerInfo
+      const buyerInfo = { ...this.$store.state.buyerInfo, ...{ buyerId: this.$store.state.buyerId } }
       const time = Date.now()
       const items = this.items.map(item => {
         const price = this.$store.getters.itemPrice(item) * 1000
         const total = item.order * price
-        const amount = `${item.order} x ${price.toLocaleString('vi')}đ = ${total.toLocaleString('vi')}đ`
+        const priceString = price.toLocaleString('vi') + 'đ'
+        const amount = `${item.order} x ${priceString} = ${total.toLocaleString('vi')}đ`
         const img = this.$store.getters.orderImg(item)
         const info = `Color: ${item.label}, Size: ${item.size}`
         return {
-          id: item.id,
-          name: item.name,
+          _id: item._id,
+          _rev: item._rev,
+          bagid: item.id,
+          prodId: item.prodId,
           hex: item.hex,
           size: item.size,
+          price: priceString,
+          quantity: item.order,
           amount: amount,
           info: info,
           img: img,
         }
       })
       const orderedItem = {
-        ...{
-          _id: this.$store.state.buyerId + '@' + time,
-          _rev: '',
-          buyerId: this.$store.state.buyerId,
-          at: time,
-          received: null,
-          confirmed: null,
-          packed: null,
-          shiped: null,
-          trackingNo: null,
-          delivered: null,
-          payed: null,
-          payType: null,
-          done: false,
-          fault: false,
-          items: items,
+        _id: this.$store.state.buyerId + '@' + time,
+        _rev: '',
+        at: time,
+        items: items,
+        status: {
+          received: 0,
+          confirmed: 0,
+          packed: 0,
+          shipped: 0,
+          trackingNo: 0,
+          delivered: 0,
+          done: 0,
+          fault: 0,
+        },
+        payment: {
           shippingCost: this.shippingCost,
           taxFee: this.taxFee,
           totalAmount: this.totalOrderAmount.label,
           totalPayment: this.finalOrderPayment,
+          paid: null,
+          payType: null,
         },
-        ...buyerInfo,
+        buyer: buyerInfo,
       }
       this.itemList = []
       this.$store.commit('pushOrdered', orderedItem)
@@ -154,6 +160,7 @@ export default {
         }
         this.$store.commit('change', info)
       })
+      this.itemList = []
     },
     backAllToCart() {
       this.del = false
@@ -166,8 +173,9 @@ export default {
       clearTimeout(this.timeout)
       this.timeout = setTimeout(() => this.$router.push(path), 350)
     },
-    isDel(bool) {
+    splice(index, bool) {
       this.del = bool
+      this.itemList.splice(index, 1)
     },
   },
   computed: {

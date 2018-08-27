@@ -63,6 +63,9 @@ img {
 .z-10 {
   z-index: 10;
 }
+.z-top {
+  z-index: 1000;
+}
 .height-25 {
   height: 2.5em !important;
 }

@@ -22,7 +22,7 @@ export default {
         this.isIntersecting = entries[0].isIntersecting
         clearInterval(this.interval)
         this.checkIntersect()
-        this.interval = setInterval(this.checkIntersect, 400)
+        this.interval = setInterval(this.checkIntersect, 200)
       },
       {
         rootMargin: '0px',

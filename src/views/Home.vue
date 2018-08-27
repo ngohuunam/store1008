@@ -1,8 +1,9 @@
 <template>
   <transition-group name="fade" id="home-page" tag="div">
     <!-- Sticky header -->
-    <div v-if="show && !sliderData.length" class="card sticky from-to-top" key="page-header">
+    <div v-if="show" class="card sticky from-to-top" key="page-header">
       <div class="flex justify-end">
+        <button class="btn classic border left" @click="login = !login"> {{buyerName || 'Login'}} </button>
         <button class="btn classic border left" @click="shuffle"> Shuffle </button>
         <button class="btn classic border left" @click="routerPush('/cart')">Bag
           <transition name="bounce">
@@ -23,39 +24,31 @@
     </div>
 
     <!-- List items -->
-    <HomeItem v-for="n in homeList" :key="n" :name="list[n]" :class="{'from-to-right': n % 2 === 1}" @viewImage="viewImage" @routerPush="routerPush" />
+    <HomeItem v-for="n in homeList" :key="n" :prodId="list[n]" :class="{'from-to-right': n % 2 === 1}" @routerPush="routerPush" />
 
     <!-- Intersect -->
     <Intersect v-if="needLoad" @enter="load" key="intersect" :len="homeList.length" />
 
-    <!-- Modal -->
-    <div v-if="sliderData.length" key="modal" class="modal-mask from-to-top" @click="closeModal">
-      <div class="modal" @click.stop>
-        <button class="btn close absolute at-top at-right z-10" @click="closeModal" />
-        <Slider :datas="sliderData" :prod="sliderProd" :nav="true" @navTo="navTo" :activeData="activeData" />
-      </div>
-    </div>
+    <Login v-if="login" key="login" @close="login = !login"/>
 
   </transition-group>
 </template>
 
 <script>
 import HomeItem from '@/components/home-item.vue'
-import Slider from '@/components/img-slider.vue'
 import Intersect from '@/components/intersect.vue'
+import Login from '@/components/modal-login.vue'
 
 export default {
   name: 'home',
-  components: { HomeItem, Slider, Intersect },
+  components: { HomeItem, Intersect, Login },
   data() {
     return {
       show: false,
       needLoad: false,
-      openModal: false,
-      sliderData: [],
-      activeData: '',
       done: false,
       homeList: [],
+      login: false,
     }
   },
   mounted() {
@@ -90,22 +83,16 @@ export default {
       this.show = false
       this.timeout = setTimeout(() => this.$router.push(path), 350)
     },
-    viewImage(item, hex) {
-      document.documentElement.style.overflow = 'hidden'
-      this.sliderProd = item._id
-      this.sliderData = item.colors.map(color => {
-        return {
-          hex: color.value,
-          imgs: color.imgs,
-        }
-      })
-      this.activeData = item.colors.findIndex(color => color.value === hex)
-    },
   },
   beforeDestroy() {
     clearTimeout(this.timeout)
   },
   computed: {
+    buyerName: {
+      get() {
+        return this.$store.state.buyerInfo.phone
+      },
+    },
     countOrdered: {
       get() {
         return this.$store.state.ordered.length

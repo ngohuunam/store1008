@@ -4,19 +4,27 @@ import { Store, get } from 'idb-keyval'
 
 const idbstore = new Store('vms-state')
 
-const remote = process.env.NODE_ENV === 'production' ? 'wss://busti.club/' : 'ws://user:pass@' + location.hostname + ':5000'
-let socket, reconnectWSTimeout, port, closedByMe, ip
+const remote = process.env.NODE_ENV === 'production' ? 'wss://busti.club/' : 'ws://' + location.hostname + ':5000'
+let socket, reconnectWSTimeout, port, closedByMe, protocol
+
+const guid = () => {
+  const s4 = () =>
+    Math.floor((1 + Math.random()) * 0x10000)
+      .toString(16)
+      .substring(1)
+  return `${s4() + s4()}-${s4()}-${s4()}-${s4()}-${s4() + s4() + s4()}`
+}
+
+protocol = guid()
 
 const connect = () => {
-  fetch('https://api.ipify.org/')
-    .then(res => res.text())
-    .catch(e => console.error(e))
-    .then(_ip => {
-      console.log(_ip)
-      ip = _ip
+  get('state', idbstore)
+    .then(state => {
+      protocol = state.buyerId || state.buyerInfo.phone || protocol
     })
+    .catch(e => console.error('[worker buyerId get state error:]', e))
     .finally(() => {
-      socket = new WebSocket(remote, ip)
+      socket = new WebSocket(remote, protocol)
       onEvent()
     })
 }
@@ -34,7 +42,7 @@ const onEvent = () => {
   ;['onmessage', 'onclose', 'onerror', 'onopen'].forEach(event => {
     socket[event] = mess => {
       const data = mess.data ? JSON.parse(mess.data) : { func: null }
-      console.log(`worker ws ${event} received data`, data)
+      console.log(`[socket ${event} received]`, data)
       const func = data.func
       switch (event) {
         case 'onmessage':
@@ -63,12 +71,9 @@ const onEvent = () => {
           break
         case 'onopen':
           // console.log(`worker onopen ws`)
-          if (closedByMe) closedByMe = false
-          else {
-            getList()
-            getOrdered()
-            clearTimeout(reconnectWSTimeout)
-          }
+          getList()
+          getOrdered()
+          clearTimeout(reconnectWSTimeout)
           break
         case 'onclose':
           console.log('ws closed')
@@ -111,10 +116,10 @@ const getOrdered = () => {
   let SEND = { type: 'query', func: 'order', commit: 'orderedItem', buyerId: null, buyer: null, term: [] }
   get('state', idbstore)
     .then(state => {
-      SEND.term = state.ordered.length ? state.ordered : null
+      SEND.term = state.ordered.length ? state.ordered : []
       SEND.buyerId = state.buyerId
       SEND.buyer = state.buyerInfo.phone && state.buyerInfo.pass ? state.buyerInfo : null
-      if (SEND.term || SEND.buyer) sksend(SEND, 'getOrdered', true)
+      if (SEND.term.length || SEND.buyer) sksend(SEND, 'getOrdered', false)
     })
     .catch(e => {
       console.error('worker getList get state error:', e)
@@ -136,10 +141,15 @@ const getProd = list => {
     })
     .catch(e => {
       console.error('worker getProd get state error:', e)
-      list.forEach(id => {
-        SEND.prodId = id
-        sksend(SEND, 'getProd error')
-      })
+      if (list && list.length) {
+        list.forEach(id => {
+          SEND.prodId = id
+          sksend(SEND, 'getProd error')
+        })
+      } else {
+        getList()
+        getOrdered()
+      }
     })
 }
 
@@ -159,33 +169,38 @@ const getItems = prodId => {
     .catch(e => {
       console.error('worker getItems get state error:', e)
     })
-    .finally(() => sksend(SEND, 'getItems'))
+    .finally(() => sksend(SEND, 'getItems', false))
 }
 
 let closeWSTimeOut
 
 onmessage = e => {
   const data = e.data
-  const func = data.func
-  switch (func) {
-    case 'mutation':
-      switch (data.mutation.type) {
-        case 'pushOrdered':
-          sendOrder(data.mutation.payload)
-      }
+  const type = data.type
+  switch (type) {
+    case 'register':
+      sksend({ func: 'register', commit: 'fetchBuyerInfo', term: data.payload }, 'register', true)
+      break
+    case 'login':
+      sksend({ func: 'login', commit: 'fetchBuyerInfo', term: data.payload }, 'login', true)
+      getOrdered()
+      break
+    case 'logout':
+      sksend({ func: 'logout', term: data.payload }, 'logout', true)
+      break
+    case 'pushOrdered':
+      sendOrder(data.payload)
       break
     case 'channel':
       port = data.port
       port.postMessage('Hello from ww')
-      port.onmessage = e => {
-        console.log('iw send mess via channel', e)
-      }
+      port.onmessage = e => console.log('iw send mess via channel', e)
       break
     case 'closedByMe':
       closedByMe = true
       if (data.value) {
         clearTimeout(closeWSTimeOut)
-        if (socket && (socket.readyState === 1 || socket.readyState === 0)) closeWSTimeOut = setTimeout(() => socket.close(), 3 * 60 * 1000)
+        if (socket && (socket.readyState === 1 || socket.readyState === 0)) closeWSTimeOut = setTimeout(() => socket.close(), 10 * 60 * 1000)
       } else {
         clearTimeout(closeWSTimeOut)
         if (socket && (socket.readyState === 2 || socket.readyState === 3)) reconnect()

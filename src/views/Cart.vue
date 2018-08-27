@@ -36,7 +36,7 @@
     </div>
 
     <!-- List of cart items -->
-    <CartItem v-for="n in itemList" :key="items[n].key" :item="items[n]" class="ani-move active-absolute" @routerPush="routerPush" @spliceCart="spliceCart" />
+    <CartItem v-for="(n, i) in itemList" :key="items[n].key" :item="items[n]" :index="i" class="ani-move active-absolute" @routerPush="routerPush" @spliceCart="spliceCart" />
 
     <!-- Bottom sticky payment info -->
     <div v-if="done && expand" class="payment cart from-to-bot ani-move" key="payment-expand">
@@ -101,16 +101,19 @@ export default {
   mounted() {
     this.show = true
     this.timeout = null
-    if (this.items.length) {
-      this.pushList()
-    }
+    this.$nextTick(function() {
+      if (this.items.length) {
+        this.pushList()
+      }
+    })
   },
   beforeDestroy() {
     clearTimeout(this.timeout)
   },
   methods: {
-    spliceCart() {
+    spliceCart(index) {
       this.toOrder = false
+      this.itemList.splice(index, 1)
     },
     routerPush(path) {
       this.itemList = []

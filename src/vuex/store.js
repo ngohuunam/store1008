@@ -21,9 +21,9 @@ if (module.hot) {
   module.hot.accept(['./state', './mutations', './getters', './actions'], () => {
     store.hotUpdate({
       state: require('./state').default,
-      mutations: require('./mutations'),
-      getters: require('./getters'),
-      actions: require('./actions'),
+      mutations: require('./mutations').default,
+      getters: require('./getters').default,
+      actions: require('./actions').default,
     })
   })
 }

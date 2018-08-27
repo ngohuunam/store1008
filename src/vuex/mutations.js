@@ -1,24 +1,7 @@
 import Vue from 'vue'
 
-export const socket = (state, data) => {
-  state.socket = data.value
-}
-
-export const orderedItemProp = (state, data) => {
-  const id = data._id || data.id
-  const item = state.ordered.find(_item => _item._id === id)
-  item[data.des] = data.value
-  if (data.rev) item._rev = data.rev
-  if (data._id) item._id = data.id
-}
-
-export const orderedItem = (state, data) => {
-  data.data.map(doc => {
-    let index = state.ordered.findIndex(_item => _item._id === doc._id)
-    console.log(state.ordered[index])
-    if (index > -1) Vue.set(state.ordered, index, doc)
-    else state.ordered.push(doc)
-  })
+export const firstTime = (state, bool) => {
+  state.firstTime = bool
 }
 
 export const worker = (state, data) => {
@@ -27,12 +10,51 @@ export const worker = (state, data) => {
   state[des] = value
 }
 
-export const firstTime = (state, bool) => {
-  state.firstTime = bool
+export const socket = (state, data) => {
+  state.socket = data.value
+}
+
+export const login = (state, payload) => {
+  console.log(payload)
+}
+
+export const register = (state, payload) => {
+  console.log(payload)
+}
+
+export const logout = state => {
+  state.buyerId = ''
+  state.buyerInfo = { name: '', address: '', phone: '', email: '', pass: '' }
+  state.ordered = []
+}
+
+export const sliderData = (state, data) => {
+  state.sliderData = data
+}
+
+export const orderedItemProp = (state, data) => {
+  const id = data._id || data.id
+  const item = state.ordered.find(_item => _item._id === id)
+  item.status[data.des] = data.value
+  if (data.rev) item._rev = data.rev
+  if (data._id) item._id = data.id
+}
+
+export const orderedItem = (state, data) => {
+  data.data.map(doc => {
+    let index = state.ordered.findIndex(_item => _item._id === doc._id)
+    if (index > -1) Vue.set(state.ordered, index, doc)
+    else state.ordered.unshift(doc)
+  })
 }
 
 export const fetchBuyerId = (state, messData) => {
   state.buyerId = messData.buyerId
+}
+
+export const fetchBuyerInfo = (state, messData) => {
+  state.buyerId = messData.buyerId
+  state.buyerInfo = messData.buyerInfo
 }
 
 export const fetchList = (state, data) => {
@@ -47,15 +69,18 @@ export const fetchList = (state, data) => {
   }
 }
 
-export const pushList = (state, id) => {
-  state.list.push(id)
-}
-
 export const pushProd = (state, messData) => {
   const data = messData.data
-  let prod = state.prods.length ? state.prods.find(_prod => _prod._id === data._id) : null
-  if (prod) prod = { ...prod, ...data }
-  else state.prods.push(data)
+  let index = state.prods.length ? state.prods.findIndex(_prod => _prod._id === data._id) : -1
+  if (index > -1) {
+    const colors = state.prods[index].colors
+    colors.map(color => {
+      const hex = color.value
+      const i = data.colors.findIndex(_color => _color.value === hex)
+      data.colors[i].sizes = color.sizes
+    })
+    Vue.set(state.prods, index, data)
+  } else state.prods.push(data)
 }
 
 export const pushColor = (state, messData) => {
@@ -70,25 +95,43 @@ export const pushColor = (state, messData) => {
   }
 }
 
+export const orderedChange = (state, messData) => {
+  const doc = messData.doc
+  const index = state.ordered.findIndex(item => item._id === doc._id)
+  Vue.set(state.ordered, index, doc)
+}
+
+export const itemChange = (state, messData) => {
+  const doc = messData.doc
+  const prod = state.prods.find(_prod => _prod._id === doc.prod)
+  const color = prod.colors.find(_color => _color.value === doc.hex)
+  const index = color.sizes.findIndex(size => size._id === doc._id)
+  Vue.set(color.sizes, index, doc)
+}
+
 export const loopItems = (state, messData) => {
   let newItems = messData.data
   let deleted = messData.deleted
   const prod = state.prods.find(_prod => _prod._id === newItems[0].prod)
   prod.colors.map(color => {
     color.sizes.reduceRight((res, size, i) => {
-      const deletedItemIndex = deleted.findIndex(delInfo => size._id === delInfo.id)
-      if (deletedItemIndex > -1) {
-        color.sizes.splice(i, 1)
-        deleted.splice(deletedItemIndex, 1)
+      if (deleted && deleted.length) {
+        const deletedItemIndex = deleted.findIndex(delInfo => size._id === delInfo.id)
+        if (deletedItemIndex > -1) {
+          color.sizes.splice(i, 1)
+          deleted.splice(deletedItemIndex, 1)
+        }
       } else {
         newItems.reduceRight((_pre, newItem, j) => {
           if (size._id === newItem._id) {
-            size = newItem
+            Vue.set(color.sizes, i, newItem)
             newItems.splice(j, 1)
           }
-        })
+          return _pre
+        }, [])
       }
-    })
+      return res
+    }, [])
   })
 }
 
@@ -98,7 +141,7 @@ export const fetchAllItems = (state, messData) => {
   prod.colors.map(color => {
     const sizes = allItems.reduceRight((pre, curr, i) => {
       if (curr.hex === color.value) {
-        pre.push(curr)
+        pre.unshift(curr)
         allItems.splice(i, 1)
       }
       return pre
@@ -136,12 +179,13 @@ export const change = (state, info) => {
 }
 
 export const operate = (state, info) => {
-  let item = state.homeItemInfo.find(_item => _item.name === info.name)
+  let item = state.homeItemInfo.find(_item => _item.prodId === info.prodId)
   if (item) {
-    const key = Object.keys(info.value)[0]
-    item[key] = info.value[key]
+    for (let key in info.value) {
+      item[key] = info.value[key]
+    }
   } else {
-    let newItem = { name: info.name, size: null, hex: null, des: null }
+    let newItem = { prodId: info.prodId, size: null, hex: null, img_i: 0, des: null }
     newItem = { ...newItem, ...info.value }
     state.homeItemInfo.push(newItem)
   }
@@ -163,7 +207,7 @@ export const toOrder = state => {
 export const pushOrdered = (state, orderedItem) => {
   state.ordered.unshift(orderedItem)
   orderedItem.items.map(_item => {
-    const index = state.bag.findIndex(__item => __item.id === _item.id)
+    const index = state.bag.findIndex(__item => __item.id === _item.bagid)
     state.bag[index].order = 0
     if (!state.bag[index].cart) state.bag.splice(index, 1)
   })
@@ -205,11 +249,16 @@ export const cartChangeProperty = (state, info) => {
     const currentIndex = state.bag.findIndex(_item => _item.id === info.currentId)
     const currentItem = state.bag[currentIndex]
     currentItem.cart = 0
-    if (!currentItem.order && !currentItem.ordered) state.bag.splice(currentIndex, 1)
+    if (!currentItem.order) state.bag.splice(currentIndex, 1)
   } else {
     const currentItem = state.bag.find(_item => _item.id === info.currentId)
     currentItem.hex = info.hex
     currentItem.size = info.size
     currentItem.id = info.newId
   }
+}
+
+export const cartChangeImg = (state, info) => {
+  const item = state.bag.find(_item => _item.id === info.id)
+  item.img_i = info.i
 }

@@ -11,8 +11,10 @@ export default {
   ordered: [],
   buyerInfo: { name: '', address: '', phone: '', email: '', pass: '' },
   homeItemInfo: [],
+  sliderData: null,
   buyerId: '',
   mess: [],
   prods: [],
   list: { _id: '', _rev: '', value: [] },
+  url: 'https://res.cloudinary.com/dgprt0eay/image/upload/',
 }

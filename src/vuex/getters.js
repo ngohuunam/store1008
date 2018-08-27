@@ -8,20 +8,6 @@ export const colors = (state, getters) => id => {
   return prod ? prod.colors : []
 }
 
-export const currentItems = (state, getters) => id => {
-  const prod = getters.prod(id)
-  const currents = { items: [], colors: [] }
-  if (prod && prod.colors.length) {
-    prod.colors.map(color => {
-      currents.colors.push({ id: color._id, rev: color._rev })
-      color.sizes.map(size => {
-        currents.items.push({ id: size._id, rev: size._rev })
-      })
-    })
-  }
-  return currents
-}
-
 export const shippingCost = state => {
   return (state.shippingCost * 1000).toLocaleString('vi') + 'đ'
 }
@@ -73,31 +59,55 @@ export const allCartChecked = state => {
   return state.bag.every(item => item.check)
 }
 
-export const homeItemInfo = state => setName => {
-  const info = state.homeItemInfo.find(item => item.name === setName)
+export const homeItemInfo = state => prodId => {
+  const info = state.homeItemInfo.find(item => item.prodId === prodId)
   if (info) return info
   else return { size: null, hex: null, des: null }
 }
 
 export const cartItemInfo = (state, getters) => item => {
-  const prod = getters.prod(item.name)
+  const prod = getters.prod(item.prodId)
   const color = prod.colors.find(_color => _color.value === item.hex)
-  const imgs = color.imgs
-  const sizeInfo = color.sizes.find(_size => _size.size === item.size) || {
+  const img_i = item.img_i || 0
+  const img = color.imgs[img_i]
+  const sizeInfo = prod.sizeInfo.map(inf => {
+    const INFO = color.sizeInfo.find(_inf => _inf.label === inf.label)
+    if (INFO) inf.value === INFO.value
+    return inf
+  })
+  sizeInfo.sort(function(a, b) {
+    const nameA = a.label.toUpperCase()
+    const nameB = b.label.toUpperCase()
+    if (nameA < nameB) {
+      return -1
+    }
+    if (nameA > nameB) {
+      return 1
+    }
+    return 0
+  })
+  const size = color.sizes.find(_size => _size.size === item.size) || {
     stock: 0,
     sale: 0,
     label: item.size,
     price: 0,
   }
   return {
-    ...sizeInfo,
-    ...{ imgs: imgs, sizeInfo: prod.sizeInfo, colorInfo: prod.colorInfo },
+    ...size,
+    ...{ img: img, sizeInfo: sizeInfo, colorInfo: prod.colorInfo },
   }
 }
 
 export const orderImg = (state, getters) => item => {
-  return getters.cartItemInfo(item).imgs[0]
+  return getters.cartItemInfo(item).img
 }
 export const itemPrice = (state, getters) => item => {
   return getters.cartItemInfo(item).price
+}
+export const remain = (state, getters) => item => {
+  const orderedLen = state.ordered.reduce((res, curr) => {
+    return (res += curr.status.confirmed ? 0 : curr.items.filter(_item => _item.bagid === item.id).length)
+  }, 0)
+  const remain = getters.cartItemInfo(item).stock - item.order - orderedLen
+  return remain
 }

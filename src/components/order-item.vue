@@ -10,7 +10,7 @@
     </div>
     <div class="flex space-between">
       <div class="flex-10">
-        <ImageLoad class="fit" :prod="item.name" :hex="item.hex" :url="img" />
+        <ImageLoad class="fit" :prodId="item.prodId" :hex="item.hex" :pid="img" />
       </div>
       <div class="col flex-85 align-end">
         <div class="flex-1 align-end"> {{info}} </div>
@@ -25,7 +25,7 @@ import ImageLoad from '@/components/image-load.vue'
 
 export default {
   name: 'order-item',
-  props: ['item'],
+  props: ['item', 'index'],
   components: { ImageLoad },
   data() {
     return {}
@@ -33,7 +33,7 @@ export default {
   mounted() {},
   methods: {
     spliceOrder() {
-      this.$emit('isDel', true)
+      this.$emit('splice', this.index, true)
       const info = {
         des: 'order',
         id: this.item.id,
@@ -51,7 +51,7 @@ export default {
       this.$store.commit('toggleStar', info)
     },
     backToCart() {
-      this.$emit('isDel', false)
+      this.$emit('splice', this.index, false)
       this.$store.commit('backToCart', this.item.id)
     },
   },

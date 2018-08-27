@@ -1,19 +1,14 @@
 <template>
-  <div>
-    <img class="fit" :src="objectURL || loading" />
-  </div>
+  <img class="fit" :src="objectURL || loading" />
 </template>
 
 <script>
 export default {
   name: 'image-load',
-  props: ['prod', 'hex', 'url'],
+  props: ['prodId', 'hex', 'pid'],
   components: {},
   created() {
     this.count = 1
-    const from = this.url.lastIndexOf('/') + 1
-    const to = this.url.lastIndexOf('.')
-    this.key = this.url.slice(from, to)
   },
   mounted() {
     if (this.firstTime) this.fetchURL()
@@ -26,38 +21,44 @@ export default {
   },
   methods: {
     getBlob() {
+      // console.log(`${this.id}-${this.pid} get blob ${this.pid}`)
       this.$store
-        .dispatch('getBlob', this.key)
+        .dispatch('getBlob', this.pid)
         .then(blob => {
           this.objectURL = URL.createObjectURL(blob)
         })
         .catch(() => {
           this.count++
-          console.error(`${this.id}-${this.key} count`, this.count)
-          if (this.count < 10) {
+          console.error(`${this.id}-${this.pid} count`, this.count)
+          if (this.count < 5) {
             setTimeout(this.getBlob, 300)
-          } else if (this.count > 9) {
+          } else if (this.count > 4) {
             this.fetchURL()
           }
         })
     },
     fetchURL() {
-      console.log(`${this.id}-${this.key} start fetch`)
+      console.log(`${this.id}-${this.pid} start fetch`)
       fetch(this.url)
         .then(response => {
           return response.blob()
         })
         .then(blob => {
           this.objectURL = URL.createObjectURL(blob)
-          if (!this.firstTime) this.$store.dispatch('saveBlob', { key: this.key, value: { id: this.id, url: this.url, blob: blob } })
+          if (!this.firstTime) this.$store.dispatch('saveBlob', { key: this.pid, value: { prod: this.prodId, hex: this.hex, blob: blob } })
         })
-        .catch(e => console.error(`fetch ${this.url} err`, e))
+        .catch(e => console.error(`fetch ${this.pid} err`, e))
     },
   },
   computed: {
     id: {
       get() {
-        return `${this.prod}.${this.hex}`
+        return `${this.prodId}.${this.hex}`
+      },
+    },
+    url: {
+      get() {
+        return this.$store.state.url + this.pid
       },
     },
     loading: {

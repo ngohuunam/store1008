@@ -82,7 +82,7 @@
 }
 .modal-mask {
   position: fixed;
-  z-index: 50;
+  z-index: 5000;
   top: 0;
   left: 0;
   width: 100%;
@@ -107,7 +107,7 @@
   width: calc(100vw - 10px);
   background-color: white;
   margin: 0 !important;
-  z-index: 200;
+  z-index: 50;
   box-shadow: 0.05em 0.05em 0.4em hsla(210, 29%, 24%, 0.2);
 }
 .payment {
