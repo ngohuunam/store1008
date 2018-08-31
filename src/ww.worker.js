@@ -4,8 +4,7 @@ import { Store, get } from 'idb-keyval'
 
 const idbstore = new Store('vms-state')
 
-// const remote = process.env.NODE_ENV === 'production' ? 'wss://busti.club/' : 'ws://' + location.hostname + ':5000'
-const remote = 'ws://127.0.0.1:5000'
+const remote = process.env.NODE_ENV === 'production' ? 'wss://busti.club/' : 'ws://' + location.hostname + ':5000'
 let socket, reconnectWSTimeout, port, closedByMe, protocol
 
 const guid = () => {
