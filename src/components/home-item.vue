@@ -28,7 +28,7 @@
 
       <!-- Image -->
       <transition name="fade" class="relative">
-        <ImageLoad class="from-to-top active-absolute fit center" :prodId="prodId" :hex="imgHex" :key="imgHex" :pid="img" @click.native="$store.commit('sliderData', {prodId: prodId, hex: imgHex, img_i: 0})" />
+        <ImageLoad class="from-to-top active-absolute fit center" :prodId="prodId" :hex="imgHex" :key="imgHex" :pid="img" @click.native="$store.commit('setState', {des: 'sliderData', value: {prodId: prodId, hex: imgHex, img_i: 0}})" />
       </transition>
 
       <!-- Price -->
@@ -150,7 +150,7 @@ export default {
           saleAtAdd: this.sizeObj.sale,
           key: Date.now(),
         }
-        this.$store.commit('pushBag', item)
+        this.$store.commit('pushState', { des: 'bag', value: item })
       }
     },
   },

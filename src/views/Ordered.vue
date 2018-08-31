@@ -9,13 +9,32 @@
     <!-- Page Sticky contain general function -->
     <div v-if="items.length && show" class="card sticky from-to-top" key="sticky">
       <div class="flex justify-end">
-        <button class="flex-1 btn border-left" @click="routerPush('/')">
-          <span class="btn home" /> Home </button>
+        <button class="flex-1 btn" @click="routerPush('/')"> Home </button>
+        <button class="flex-1 btn border-left" :class="{'bg green': filterState==='all'}" @click="filterState='all'">All
+          <transition name="bounce">
+            <div v-if="filterCount('all')" class="badge btn-classic">{{filterCount('all')}}</div>
+          </transition>
+        </button>
+        <button class="flex-1 btn border-left" :class="{'bg green': filterState==='pending'}" @click="filterState='pending'">Pending
+          <transition name="bounce">
+            <div v-if="filterCount('pending')" class="badge btn-classic">{{filterCount('pending')}}</div>
+          </transition>
+        </button>
+        <button class="flex-1 btn border-left" :class="{'bg green': filterState==='done'}" @click="filterState='done'">Done
+          <transition name="bounce">
+            <div v-if="filterCount('done')" class="badge btn-classic">{{filterCount('done')}}</div>
+          </transition>
+        </button>
+        <button class="flex-1 btn border-left" :class="{'bg green': filterState==='canceled'}" @click="filterState='canceled'">Canceled
+          <transition name="bounce">
+            <div v-if="filterCount('canceled')" class="badge btn-classic">{{filterCount('canceled')}}</div>
+          </transition>
+        </button>
       </div>
     </div>
 
     <!-- List of ordered items -->
-    <OrderedItem v-for="n in itemList" :key="items[n].at" :item="items[n]" />
+    <OrderedItem v-if="filter(n)" v-for="n in itemList" :key="items[n].at" class="ani-move active-absolute" :index="n" @splice="splice" />
   </transition-group>
 </template>
 
@@ -29,6 +48,7 @@ export default {
     return {
       show: false,
       itemList: [],
+      filterState: 'pending',
     }
   },
   created() {},
@@ -43,13 +63,41 @@ export default {
     clearTimeout(this.timeout)
   },
   methods: {
+    splice() {
+      this.itemList.pop()
+    },
+    filter(index) {
+      const item = this.items[index]
+      switch (this.filterState) {
+        case 'pending':
+          return item.status.done === 0
+        case 'done':
+          return item.status.done > 0 && item.status.delivered > 0 && item.status.fault === 0
+        case 'canceled':
+          return item.status.done > 0 && item.status.delivered === 0 && item.status.fault > 0
+        default:
+          return true
+      }
+    },
+    filterCount(state) {
+      switch (state) {
+        case 'pending':
+          return this.items.filter(item => item.status.done === 0).length
+        case 'done':
+          return this.items.filter(item => item.status.done > 0 && item.status.delivered > 0 && item.status.fault === 0).length
+        case 'canceled':
+          return this.items.filter(item => item.status.done > 0 && item.status.delivered === 0 && item.status.fault > 0).length
+        default:
+          return this.items.length
+      }
+    },
     pushList() {
       const len = this.itemList.length
       clearTimeout(this.timeout)
       if (len < this.items.length) {
         this.itemList.push(len)
-        this.timeout = setTimeout(this.pushList, 200)
-      } else this.timeout = setTimeout(() => (this.done = true), 150)
+        this.timeout = setTimeout(this.pushList, 100)
+      } else this.timeout = setTimeout(() => (this.done = true), 100)
     },
     routerPush(path) {
       this.itemList = []

@@ -3,8 +3,8 @@
     <!-- Sticky header -->
     <div v-if="show" class="card sticky from-to-top" key="page-header">
       <div class="flex justify-end">
-        <button class="btn classic border left" @click="login = !login"> {{buyerName || 'Login'}} </button>
-        <button class="btn classic border left" @click="shuffle"> Shuffle </button>
+        <button class="btn classic bg" :class="`${auth ? 'green' : 'red'}`" @click="login = !login"> {{phone}} </button>
+        <button class="btn classic" @click="shuffle"> Shuffle </button>
         <button class="btn classic border left" @click="routerPush('/cart')">Bag
           <transition name="bounce">
             <div v-if="countBag.cart" class="badge btn-classic">{{countBag.cart}}</div>
@@ -29,7 +29,7 @@
     <!-- Intersect -->
     <Intersect v-if="needLoad" @enter="load" key="intersect" :len="homeList.length" />
 
-    <Login v-if="login" key="login" @close="login = !login"/>
+    <Login v-if="login" key="login" @close="login = !login" />
 
   </transition-group>
 </template>
@@ -88,9 +88,14 @@ export default {
     clearTimeout(this.timeout)
   },
   computed: {
-    buyerName: {
+    auth: {
       get() {
-        return this.$store.state.buyerInfo.phone
+        return this.$store.state.buyer._id
+      },
+    },
+    phone: {
+      get() {
+        return this.auth ? this.$store.state.buyer.phone : 'Login'
       },
     },
     countOrdered: {

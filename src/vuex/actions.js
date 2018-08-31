@@ -2,9 +2,9 @@ import { Store, get, set } from 'idb-keyval'
 const idbstore = new Store('vms-imgs')
 
 export const pushMess = ({ commit }, mess) => {
-  const message = mess || 'Out of stock, you can place order, we will try our best'
-  commit('pushMess', message)
-  setTimeout(() => commit('spliceMess', 0), 5000)
+  const message = mess || { text: 'Out of stock, you can place order, we will try our best' }
+  commit('pushState', { des: 'mess', value: message })
+  setTimeout(() => commit('spliceState', { des: 'mess', index: 0 }), 5000)
 }
 
 export const getBlob = (context, key) => {

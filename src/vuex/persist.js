@@ -10,14 +10,14 @@ import IW from 'worker-loader!../iw.worker.js'
 const persistPlugin = async store => {
   const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection
   console.log('connection', connection.type || connection.effectiveType)
-  console.log('Plugin created')
 
   let savedState = await get('state', idbstore)
   if (!savedState) {
-    setTimeout(() => store.commit('firstTime', false), 20 * 1000)
+    setTimeout(() => store.commit('setState', { des: 'firstTime', value: false }), 20 * 1000)
     await set('state', state, idbstore)
   } else {
     savedState.firstTime = false
+    savedState.loader = false
     savedState.sliderData = null
     savedState.worker = false
     savedState.imgWorker = false
@@ -72,15 +72,16 @@ const persistPlugin = async store => {
       const data = e.data
       const commit = data.commit
       const dispatch = data.dispatch
+      const payload = data.payload
       const func = data.func
-      if (commit) store.commit(commit, data)
-      if (dispatch) store.dispatch(dispatch, data.payload)
+      if (commit) store.commit(commit, payload)
+      if (dispatch) store.dispatch(dispatch, data.dispatchPayload)
       switch (func) {
-        case 'all-prod':
-          imgWorker.postMessage({ func: 'save', colors: data.data.colors })
+        case 'push-prod':
+          imgWorker.postMessage({ func: 'save', colors: payload.value.colors })
           break
-        case 'prod':
-          imgWorker.postMessage({ func: 'check', colors: data.data.colors })
+        case 'set-prod':
+          imgWorker.postMessage({ func: 'check', colors: payload.value.colors })
           break
       }
     }
@@ -93,7 +94,7 @@ const persistPlugin = async store => {
       console.log('main thread onmessage data from imgWorker', e.data)
       const data = e.data
       const commit = data.commit
-      store.commit(commit, data)
+      store.commit(commit, data.payload)
     }
     imgWorker.onerror = () => {
       console.error('There is an error with imgWorker!')

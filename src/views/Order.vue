@@ -12,7 +12,7 @@
       <button class="btn home size-2" @click="routerPush('/ordered')" />
     </div>
 
-    <!-- Page Sticky use to select all or unselect all -->
+    <!-- Page Function sticky -->
     <div v-if="items.length && show && !openModal" class="card sticky from-to-top" key="sticky">
       <div class="flex justify-end">
         <button class="flex-1 btn" @click="backAllToCart">
@@ -32,7 +32,7 @@
     </div>
 
     <!-- List of order items -->
-    <OrderItem v-for="(n, i) in itemList" class="ani-move active-absolute" :key="items[n].key" :item="items[n]" :index="i" @splice="splice" />
+    <OrderItem v-for="(n, i) in itemList" class="ani-move active-absolute" :key="items[i].key" :item="items[i]" :index="i" @splice="splice" />
 
     <!-- Payment info -->
     <div v-if="done && items.length" class="payment order from-to-bot ani-move" key="payment">
@@ -52,19 +52,21 @@
         <div>Final Payment Amount:</div>
         <div>{{finalOrderPayment}}</div>
       </div>
-      <button class="btn full-width bg green m-t-4" @click="placeOrder"> Place Order </button>
+      <button class="btn full-width bg green m-t-4" @click="openModal = true"> {{logged ? 'Place Order' : 'Login First'}} </button>
     </div>
-    <Modal v-if="openModal" @close="() => openModal = false" key="modal" class="from-to-top" @confirm="confirm" />
+    <!-- <Modal v-if="openModal" @close="() => openModal = false" key="modal" class="from-to-top" @confirm="confirm" /> -->
+    <component :is="modal" v-if="openModal" @close="openModal = false" key="modal" class="from-to-top" @confirm="confirm"></component>
   </transition-group>
 </template>
 
 <script>
 import OrderItem from '@/components/order-item.vue'
-import Modal from '@/components/modal-buyer-info.vue'
+import Contact from '@/components/modal-buyer-info.vue'
+import Login from '@/components/modal-login.vue'
 
 export default {
   name: 'order',
-  components: { OrderItem, Modal },
+  components: { OrderItem, Contact, Login },
   data() {
     return {
       show: false,
@@ -91,11 +93,14 @@ export default {
       clearTimeout(this.timeout)
       if (len < this.items.length) {
         this.itemList.push(len)
-        this.timeout = setTimeout(this.pushList, 200)
-      } else this.timeout = setTimeout(() => (this.done = true), 150)
+        this.timeout = setTimeout(this.pushList, 100)
+      } else
+        this.timeout = setTimeout(() => {
+          this.done = true
+          clearTimeout(this.timeout)
+        }, 100)
     },
     confirm() {
-      const buyerInfo = { ...this.$store.state.buyerInfo, ...{ buyerId: this.$store.state.buyerId } }
       const time = Date.now()
       const items = this.items.map(item => {
         const price = this.$store.getters.itemPrice(item) * 1000
@@ -119,7 +124,7 @@ export default {
         }
       })
       const orderedItem = {
-        _id: this.$store.state.buyerId + '@' + time,
+        _id: this.$store.state.buyer._id + '@' + time,
         _rev: '',
         at: time,
         items: items,
@@ -138,17 +143,15 @@ export default {
           taxFee: this.taxFee,
           totalAmount: this.totalOrderAmount.label,
           totalPayment: this.finalOrderPayment,
-          paid: null,
-          payType: null,
+          paid: 0,
+          payType: 0,
         },
-        buyer: buyerInfo,
+        buyer: this.$store.state.buyer,
       }
       this.itemList = []
       this.$store.commit('pushOrdered', orderedItem)
+      this.$router.push('/ordered')
       this.openModal = false
-    },
-    placeOrder() {
-      this.openModal = true
     },
     spliceAllOrder() {
       this.del = true
@@ -179,6 +182,16 @@ export default {
     },
   },
   computed: {
+    modal: {
+      get() {
+        return this.logged ? 'Contact' : 'Login'
+      },
+    },
+    logged: {
+      get() {
+        return this.$store.state.buyer._id
+      },
+    },
     countCart: {
       get() {
         return this.$store.getters.countBag.cart

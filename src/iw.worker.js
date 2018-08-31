@@ -1,4 +1,4 @@
-postMessage({ func: 'worker', commit: 'worker', des: 'imgWorker', value: true })
+postMessage({ commit: 'setState', payload: { des: 'imgWorker', value: true } })
 
 import { Store, get, set } from 'idb-keyval'
 const idbstore = new Store('vms-imgs')
@@ -13,15 +13,13 @@ onmessage = e => {
     case 'channel':
       port = e.data.port
       port.postMessage('Hello from iw')
-      port.onmessage = e => {
-        console.log('ww send mess via channel', e)
-      }
+      port.onmessage = e => console.log('ww send mess via channel', e)
       break
     case 'save':
-      saveImgs(colors)
+      saveImgsByColors(colors)
       break
     case 'check':
-      checkImgs(colors)
+      checkImgsByColors(colors)
   }
 }
 
@@ -35,36 +33,38 @@ const handleError = info => {
   console.error(info)
 }
 
-const checkImgs = colors => {
-  colors.forEach(color => checkImg(color))
+const checkImgsByColors = colors => {
+  colors.forEach(color => checkImgsByColor(color))
 }
 
-const checkImg = color => {
+const checkImgsByColor = color => {
   color.imgs.forEach(pid => {
     get(pid, idbstore)
       .then(() => handleResult({ task: 'checkImg', status: 'ok', prod: color.prod, hex: color.value, key: pid }))
       .catch(e => {
         handleError({ task: 'checkImg', status: 'get keyvalue error', e: e, prod: color.prod, hex: color.value, key: pid })
-        saveImg(color)
+        saveImgByPid(pid, color.prod, color.value)
       })
   })
 }
 
-const saveImg = color => {
-  color.imgs.forEach(pid => {
-    const url = remote + pid
-    fetchURL(url)
-      .then(blob => {
-        saveBlob(pid, color.prod, color.value, blob)
-          .then(key => handleResult({ task: 'saveImg', status: 'ok', prod: color.prod, hex: color.value, key: key }))
-          .catch(e => handleError({ task: 'saveBlob', status: 'error', e: e, prod: color.prod, hex: color.value, pid: pid }))
-      })
-      .catch(e => handleError({ task: 'fetchURL', status: 'error', e: e, prod: color.prod, hex: color.value, url: url }))
-  })
+const saveImgByPid = (pid, prodId, hex) => {
+  const url = remote + pid
+  fetchURL(url)
+    .then(blob => {
+      saveBlob(pid, prodId, hex, blob)
+        .then(key => handleResult({ task: 'saveImg', status: 'ok', prod: prodId, hex: hex, key: key }))
+        .catch(e => handleError({ task: 'saveBlob', status: 'error', e: e, prod: prodId, hex: hex, pid: pid }))
+    })
+    .catch(e => handleError({ task: 'fetchURL', status: 'error', e: e, prod: prodId, hex: hex, url: url }))
 }
 
-const saveImgs = colors => {
-  colors.forEach(color => saveImg(color))
+const saveImgsByColor = color => {
+  color.imgs.forEach(pid => saveImgByPid(pid, color.prod, color.value))
+}
+
+const saveImgsByColors = colors => {
+  colors.forEach(color => saveImgsByColor(color))
 }
 
 const saveBlob = (pid, prod, hex, blob) => {

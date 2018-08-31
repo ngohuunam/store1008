@@ -36,7 +36,7 @@
     </div>
 
     <!-- List of cart items -->
-    <CartItem v-for="(n, i) in itemList" :key="items[n].key" :item="items[n]" :index="i" class="ani-move active-absolute" @routerPush="routerPush" @spliceCart="spliceCart" />
+    <CartItem v-for="(n, i) in itemList" :key="items[i].key" :item="items[i]" :index="i" class="ani-move active-absolute" @routerPush="routerPush" @spliceCart="spliceCart" />
 
     <!-- Bottom sticky payment info -->
     <div v-if="done && expand" class="payment cart from-to-bot ani-move" key="payment-expand">

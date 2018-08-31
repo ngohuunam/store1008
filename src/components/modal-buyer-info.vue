@@ -6,23 +6,23 @@
         <h2> Your information</h2>
         <div>
           <label for="name" class="flex-30">Name: *</label>
-          <div class="flex-1"><input name="name" required :value="buyerInfo.name" @input="$store.commit('setBuyerInfo', { name: $event.target.value })" /></div>
+          <div class="flex-1"><input name="name" required :value="buyer.name" @input="$store.commit('setBuyerInfo', { name: $event.target.value })" /></div>
         </div>
         <div>
           <label for="address" class="flex-30">Address: *</label>
-          <div class="flex-1"><input name="address" required :value="buyerInfo.address" @input="$store.commit('setBuyerInfo', { address: $event.target.value })" /></div>
+          <div class="flex-1"><input name="address" required :value="buyer.address" @input="$store.commit('setBuyerInfo', { address: $event.target.value })" /></div>
         </div>
         <div>
           <label for="phone" class="flex-30">Phone: *</label>
-          <div class="flex-1"><input type="tel" name="phone" required :value="buyerInfo.phone" @input="$store.commit('setBuyerInfo', { phone: $event.target.value })" /></div>
+          <div class="flex-1"><input type="tel" name="phone" required :value="buyer.phone" @input="$store.commit('setBuyerInfo', { phone: $event.target.value })" /></div>
         </div>
         <div>
           <label for="email" class="flex-30">Email: *</label>
-          <div class="flex-1"><input type="email" pattern="[a-zA-Z0-9.!#$%&amp;’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)+" name="email" required :value="buyerInfo.email" @input="$store.commit('setBuyerInfo', { email: $event.target.value })" /></div>
+          <div class="flex-1"><input type="email" pattern="[a-zA-Z0-9.!#$%&amp;’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)+" name="email" required :value="buyer.email" @input="$store.commit('setBuyerInfo', { email: $event.target.value })" /></div>
         </div>
         <div>
           <label for="pass" class="flex-30">Password: *</label>
-          <div class="flex-1"><input type="password" name="pass" required :value="buyerInfo.pass" @input="$store.commit('setBuyerInfo', { pass: $event.target.value })" /></div>
+          <div class="flex-1"><input type="password" name="pass" required :value="buyer.pass" @input="$store.commit('setBuyerInfo', { pass: $event.target.value })" /></div>
         </div>
         <button :disabled="!valid" class="btn full-width bg green" @click="$emit('confirm')"> Confirm </button>
       </div>
@@ -43,12 +43,12 @@ export default {
   computed: {
     valid: {
       get() {
-        return this.buyerInfo.name.length && this.buyerInfo.address.length && this.buyerInfo.phone.length && this.buyerInfo.email.length && this.buyerInfo.pass.length
+        return this.buyer.name.length && this.buyer.address.length && this.buyer.phone.length && this.buyer.email.length && this.buyer.pass.length
       },
     },
-    buyerInfo: {
+    buyer: {
       get() {
-        return this.$store.state.buyerInfo
+        return this.$store.state.buyer
       },
     },
   },
