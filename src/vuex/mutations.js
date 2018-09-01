@@ -1,30 +1,31 @@
 import Vue from 'vue'
 
 export const setState = (state, payload) => {
-  console.log('setState payload', payload)
+  // console.log('setState payload', payload)
   const prop = payload.des
   const value = payload.value
   state[prop] = value
 }
 
 export const setStateArray = (state, payload) => {
-  console.log('setStateArray payload', payload)
+  // console.log('setStateArray payload', payload)
   const prop = payload.des
   const value = payload.value
   const key = payload.key
   const index = state[prop].findIndex(ele => ele[key] === value[key])
-  Vue.set(state[prop], index, value)
+  if (index > -1) Vue.set(state[prop], index, value)
+  else state[prop].push(value)
 }
 
 export const pushState = (state, payload) => {
-  console.log('pushState payload', payload)
+  // console.log('pushState payload', payload)
   const prop = payload.des
   const value = payload.value
   state[prop].push(value)
 }
 
 export const spliceState = (state, payload) => {
-  console.log('spliceState payload', payload)
+  // console.log('spliceState payload', payload)
   const prop = payload.des
   let index = payload.index
   if (index === undefined) {

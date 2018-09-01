@@ -1,11 +1,11 @@
-postMessage({ commit: 'setState', payload: { des: 'worker', value: true } })
+self.postMessage({ commit: 'setState', payload: { des: 'worker', value: true } })
 
 import { Store, get } from 'idb-keyval'
 
 const idbstore = new Store('vms-state')
 
 const remote = process.env.NODE_ENV === 'production' ? 'wss://busti.club/' : 'ws://' + location.hostname + ':5000'
-let socket, reconnectWSTimeout, port, closedByMe, protocol
+let socket, reconnectWSTimeout, port, closedByMe
 
 const guid = () => {
   const s4 = () =>
@@ -15,9 +15,10 @@ const guid = () => {
   return `${s4() + s4()}-${s4()}-${s4()}-${s4()}-${s4() + s4() + s4()}`
 }
 
-protocol = guid()
+let protocol = guid()
 
 const connect = () => {
+  self.postMessage({ commit: 'setStateArray', payload: { des: 'mess', key: 'id', value: { text: 'Connecting to server...', id: 'connecting' } } })
   get('state', idbstore)
     .then(state => {
       protocol = state.buyer._id || state.buyer.phone || protocol
@@ -30,7 +31,7 @@ const connect = () => {
 }
 
 const reconnect = () => {
-  console.log('reconnect')
+  self.postMessage({ commit: 'setStateArray', payload: { des: 'mess', key: 'id', value: { text: 'Reconnecting to server...', id: 'connecting' } } })
   clearTimeout(reconnectWSTimeout)
   reconnectWSTimeout = setTimeout(() => {
     connect()
@@ -49,31 +50,46 @@ const onEvent = () => {
           switch (func) {
             case 'connected':
               console.log('ws connected', data)
-              postMessage({ commit: 'setState', payload: { des: 'socket', value: true } })
+              self.postMessage({ commit: 'setState', payload: { des: 'socket', value: true }, dispatch: 'changeMess', dispatchPayload: { text: 'Online!!', color: 'green', id: 'connecting' } })
               break
-            case 'all-prod':
-              postMessage(data)
-              break
-            case 'syncProds':
-              console.log(data.list)
+
+            case 'sync-prods':
+              self.postMessage(data)
               syncProds(data.list)
               break
-            case 'syncItems':
+
+            case 'push-prod':
+              if (port) port.postMessage({ func: 'fetch', colors: data.payload.value.colors })
+              else data.func = 'iw-fetch'
+              self.postMessage(data)
+              break
+
+            case 'set-prod':
+              if (port) port.postMessage({ func: 'check', colors: data.payload.value.colors })
+              else data.func = 'iw-check'
+              self.postMessage(data)
+              break
+
+            case 'sync-items':
               syncItems(data.prodId)
               break
+
             default:
-              if (data.changed) postMessage(data)
+              self.postMessage(data)
           }
           break
+
         case 'onopen':
           // console.log(`worker onopen ws`)
+          self.postMessage({ commit: 'pushState', payload: { des: 'mess', value: { text: `Get list of products,...`, color: 'cyan' } } })
           syncList()
           syncOrdered()
           clearTimeout(reconnectWSTimeout)
           break
+
         case 'onclose':
           console.log('ws closed')
-          postMessage({ commit: 'setState', payload: { des: 'socket', value: true } })
+          self.postMessage({ commits: ['setState', 'setStateArray'], payload: [{ des: 'socket', value: false }, { des: 'mess', value: { text: 'Not connecting to server!', id: 'connecting' } }] })
           if (!closedByMe) {
             reconnect()
           }
@@ -97,34 +113,34 @@ const newOrder = payload => {
 }
 
 const syncList = () => {
-  let query = { func: 'list', prodId: null, term: { _rev: null } }
+  let query = { func: 'list', payload: { _rev: null } }
   get('state', idbstore)
-    .then(state => (query.term = state.list))
+    .then(state => (query.payload = state.list))
     .catch(e => console.error('worker syncList get state error:', e))
     .finally(() => sksend(query, 'syncList'))
 }
 
 const syncOrdered = () => {
-  let query = { func: 'syncOrdered', buyer: null, term: [] }
+  let query = { func: 'syncOrdered', buyer: null, payload: [] }
   get('state', idbstore)
     .then(state => {
-      query.term = state.ordered.length ? state.ordered : []
+      query.payload = state.ordered.length ? state.ordered : []
       query.buyer = state.buyer._id && state.buyer.phone && state.buyer.pass ? state.buyer : null
-      if (query.term.length || query.buyer) sksend(query, 'syncOrdered', false)
+      if (query.payload.length || query.buyer) sksend(query, 'syncOrdered', false)
     })
     .catch(e => console.error('worker syncOrdered get state error:', e))
 }
 
 const syncProds = list => {
-  let query = { func: 'prod', prodId: null, term: { _rev: null } }
+  let query = { func: 'syncProd', payload: { _rev: null, prodId: null } }
   get('state', idbstore)
     .then(state => {
       const LIST = list || state.list.value
       LIST.forEach(id => {
         const prod = state.prods.find(_prod => _prod._id === id)
         const rev = prod ? prod._rev : null
-        query.prodId = id
-        query.term._rev = rev
+        query.payload.prodId = id
+        query.payload._rev = rev
         sksend(query, 'syncProds success')
       })
     })
@@ -143,42 +159,40 @@ const syncProds = list => {
 }
 
 const syncItems = prodId => {
-  const SEND = { type: 'query', func: 'items', commit: 'loopItems', prodId: prodId, term: [] }
+  const SEND = { func: 'syncItems', payload: { prodId: prodId, term: [] } }
   get('state', idbstore)
     .then(state => {
       const prod = state.prods.find(_prod => _prod._id === prodId)
       if (prod && prod.colors.length) {
         prod.colors.map(color => {
           color.sizes.map(size => {
-            SEND.term.push({ id: size._id, rev: size._rev })
+            SEND.payload.term.push({ id: size._id, rev: size._rev })
           })
         })
       }
     })
-    .catch(e => {
-      console.error('worker syncItems get state error:', e)
-    })
+    .catch(e => console.error('worker syncItems get state error:', e))
     .finally(() => sksend(SEND, 'syncItems', false))
 }
 
 let closeWSTimeOut
 
-onmessage = e => {
+self.onmessage = e => {
   const data = e.data
   const type = data.type
   switch (type) {
+    case 'logout':
+      data.payload = guid()
+    //eslint-disable-next-line
     case 'register':
     case 'login':
       sksend({ func: type, payload: data.payload }, type, true)
-      break
-    case 'logout':
-      if (protocol === data.payload) protocol = guid()
-      sksend({ func: 'logout', payload: data.payload, protocol: protocol }, 'logout', true)
       break
     case 'pushOrdered':
       newOrder(data.payload)
       break
     case 'channel':
+      console.log('ww data.port', data.port)
       port = data.port
       port.postMessage('Hello from ww')
       port.onmessage = e => console.log('iw send mess via channel', e)

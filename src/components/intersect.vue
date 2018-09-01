@@ -17,7 +17,10 @@ export default {
   },
   created() {
     this.interval = null
-    this.observer = new IntersectionObserver(
+    let OB
+    if (window.IntersectionObserver) OB = window.IntersectionObserver
+    else OB = require('intersection-observer')
+    this.observer = new OB(
       entries => {
         this.isIntersecting = entries[0].isIntersecting
         clearInterval(this.interval)

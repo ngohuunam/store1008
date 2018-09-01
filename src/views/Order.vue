@@ -155,6 +155,7 @@ export default {
     },
     spliceAllOrder() {
       this.del = true
+      this.itemList = []
       this.items.map(item => {
         const info = {
           des: 'order',
@@ -163,10 +164,10 @@ export default {
         }
         this.$store.commit('change', info)
       })
-      this.itemList = []
     },
     backAllToCart() {
       this.del = false
+      this.itemList = []
       this.items.map(item => this.$store.commit('backToCart', item.id))
     },
     routerPush(path) {

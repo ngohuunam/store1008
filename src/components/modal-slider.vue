@@ -1,7 +1,7 @@
 <template>
   <div class="modal-mask" v-if="prodId">
     <div class="modal">
-      <button class="btn close absolute at-top at-right z-10" @click="$store.commit('sliderData', null)" />
+      <button class="btn close absolute at-top at-right z-10" @click="$store.commit('setSate', {des: 'sliderData', value: null})" />
       <div class="slider-container">
         <transition :name="transitionName" class="slider">
           <ImageLoad :prodId="prodId" :hex="color.value" :pid="img" :key="img" v-touch:swipe.left="next" v-touch:swipe.right="previous" />
@@ -22,7 +22,7 @@
       </div>
       <div class="flex">
         <button class="btn flex-1 bg green" @click="pick"> {{atCart ? 'Change Color' : 'Pick'}} </button>
-        <button class="btn flex-1" @click="$store.commit('sliderData', null)"> Cancel </button>
+        <button class="btn flex-1" @click="$store.commit('setSate', {des: 'sliderData', value: null})"> Cancel </button>
       </div>
     </div>
   </div>
@@ -59,7 +59,7 @@ export default {
         } else if (info.img_i !== this.img_i) this.$store.commit('cartChangeImg', { id: info.currentId, i: this.img_i })
       }
       this.$store.commit('operate', { prodId: this.prodId, value: { hex: this.color.value, img_i: this.img_i } })
-      this.$store.commit('sliderData', null)
+      this.$store.commit('setSate', { des: 'sliderData', value: null })
     },
     navTo(i) {
       this.transitionName = i > this.color_i ? 'left-right' : 'right-left'
