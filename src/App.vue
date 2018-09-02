@@ -1,7 +1,7 @@
 <template>
   <div id="app" :style="fontSize">
-    <transition-group name="mess" tag="div" class="col flex-1 absolute full-width z-top">
-      <div class="flex-1 center height-2 bg p-a-4 m-b-4 relative" v-for="(message, i) in mess" :key="message.text+i" :class="message.color || 'red'">
+    <transition-group name="mess" tag="div" class="sticky at-top-27em">
+      <div class="flex-1 center height-2 bg p-a-4 m-t-4 relative" v-for="(message, i) in mess" :key="i" :class="message.color || 'red'">
         <button class="btn close icon-white size-06 absolute at-top at-right" @click="$store.commit('spliceState', {des: 'mess', index: i})" />{{message.text}}</div>
     </transition-group>
     <transition name="fade">

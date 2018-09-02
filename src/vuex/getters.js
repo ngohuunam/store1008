@@ -62,7 +62,7 @@ export const allCartChecked = state => {
 export const homeItemInfo = state => prodId => {
   const info = state.homeItemInfo.find(item => item.prodId === prodId)
   if (info) return info
-  else return { size: null, hex: null, des: null }
+  else return { size: null, hex: null, des: null, img_i: 0 }
 }
 
 export const cartItemInfo = (state, getters) => item => {

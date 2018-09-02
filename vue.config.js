@@ -1,3 +1,5 @@
+const CompressionPlugin = require('compression-webpack-plugin')
+
 module.exports = {
   devServer: {
     // open: true,
@@ -13,6 +15,15 @@ module.exports = {
     //     },
     //   ],
     // },
+    plugins: [
+      new CompressionPlugin({
+        asset: '[path].gz[query]',
+        algorithm: 'gzip',
+        test: /\.vue$|\.js$|\.css$|\.html$/,
+        cache: true,
+        minRatio: 0.8,
+      }),
+    ],
     output: {
       globalObject: 'this',
     },

@@ -1,20 +1,16 @@
-import { Store, set, get } from 'idb-keyval'
+import { IDStore, setKey, getKey } from 'idb-keyval'
 
-const idbstore = new Store('vms-state')
+const idbstore = new IDStore('vms-state')
 
 import state from './state'
 
 const persistPlugin = async store => {
-  store.commit('pushState', { des: 'mess', value: { text: 'Init...', color: 'green' } })
-  const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection
-  console.log('connection', connection.type || connection.effectiveType)
-
-  let savedState = await get('state', idbstore)
+  store.commit('pushState', { des: 'mess', value: { text: 'Init...', color: 'green', id: 'init' } })
+  let savedState = await getKey('state', idbstore)
   if (!savedState) {
     setTimeout(() => store.commit('setState', { des: 'firstTime', value: false }), 20 * 1000)
-    await set('state', state, idbstore)
+    await setKey('state', state, idbstore)
   } else {
-    savedState.mess = [{ text: 'Not connecting to server!', id: 'connecting' }]
     savedState.firstTime = false
     savedState.loader = false
     savedState.sliderData = null
@@ -32,11 +28,11 @@ const persistPlugin = async store => {
 
   store.subscribe(async (mutation, state) => {
     if (committing) return
-    await set('state', state, idbstore)
+    await setKey('state', state, idbstore)
     if (broadcast) broadcast.postMessage(mutation)
     if (worker) {
       switch (mutation.type) {
-        case 'pushOrdered':
+        case 'newOrder':
         case 'login':
         case 'register':
         case 'logout':
@@ -47,6 +43,7 @@ const persistPlugin = async store => {
 
   if (broadcast) {
     store.commit('setState', { des: 'broadcastChannel', value: true })
+    // console.log('init BroadcastChannel ' + broadcast)
     broadcast.onmessage = e => {
       const data = e.data
       const func = data.func
@@ -66,16 +63,23 @@ const persistPlugin = async store => {
     const IW = require('worker-loader!../iw.worker.js')
     worker = new WW()
     imgWorker = new IW()
-  } else {
+  }
+
+  if (!imgWorker) {
+    const PseudoWorker = require('pseudo-worker')
+    imgWorker = new PseudoWorker('../iw.worker.js')
+  }
+
+  if (!worker) {
     const PseudoWorker = require('pseudo-worker')
     worker = new PseudoWorker('../ww.worker.js')
-    imgWorker = new PseudoWorker('../iw.worker.js')
   }
 
   if (imgWorker && worker) {
     channel = new MessageChannel() || null
     if (channel) {
       store.commit('setState', { des: 'messageChannel', value: true })
+      // console.log('init MessageChannel ' + channel)
       imgWorker.postMessage({ func: 'channel', port: channel.port1 }, [channel.port1])
       worker.postMessage({ type: 'channel', port: channel.port2 }, [channel.port2])
     }
@@ -102,22 +106,25 @@ const persistPlugin = async store => {
       }
     }
     worker.onerror = e => {
-      console.error('There is an error with worker!', e)
-      store.commit('worker', { des: 'worker', value: false })
+      console.error('worker error ' + e.message)
+      store.commit('setState', { des: 'worker', value: false })
     }
 
     imgWorker.onmessage = e => {
-      console.log('main thread onmessage data from imgWorker', e.data)
       const data = e.data
+      const dispatch = data.dispatch
       const commit = data.commit
-      store.commit(commit, data.payload)
+      if (dispatch) store.dispatch(dispatch, data.payload)
+      if (commit) store.commit(commit, data.payload)
     }
+
     imgWorker.onerror = e => {
-      console.error('There is an error with imgWorker!', e)
-      store.commit('worker', { des: 'imgWorker', value: false })
+      console.error('imgWorker error ' + e.message)
+      store.commit('setState', { des: 'imgWorker', value: false })
     }
     document.addEventListener('visibilitychange', () => worker.postMessage({ type: 'closedByMe', value: document.hidden }), false)
   } else store.commit('pushState', { des: 'mess', value: { text: `Your browser doesn't supported, pls use chrome instead` } })
+  store.commit('spliceState', { des: 'mess', key: 'id', value: 'init' })
 }
 
 export default persistPlugin

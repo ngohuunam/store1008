@@ -6,11 +6,11 @@
         <h2> Login information </h2>
         <div>
           <label for="phone" class="flex-30">Phone: *</label>
-          <div class="flex-1"><input @keyup.enter="buyer._id ? login : ''" v-focus type="tel" name="phone" required :value="buyer.phone" @input="$store.commit('setBuyerInfo', { phone: $event.target.value })" /></div>
+          <div class="flex-1"><input @keyup.enter="buyer._id ? '' : login()" v-focus type="tel" name="phone" required :value="buyer.phone" @input="$store.commit('setBuyerInfo', { phone: $event.target.value })" /></div>
         </div>
         <div>
           <label for="pass" class="flex-30">Password: *</label>
-          <div class="flex-1"><input @keyup.enter="buyer._id ? login : ''" type="password" name="pass" required :value="buyer.pass" @input="$store.commit('setBuyerInfo', { pass: $event.target.value })" /></div>
+          <div class="flex-1"><input @keyup.enter="buyer._id ? '' : login()" type="password" name="pass" required :value="buyer.pass" @input="$store.commit('setBuyerInfo', { pass: $event.target.value })" /></div>
         </div>
         <div class="flex">
           <button :disabled="!buyer.phone || !buyer.pass" class="btn flex-1 bg green" @click="login"> {{buyer._id ? 'Logout' : 'Login'}} </button>

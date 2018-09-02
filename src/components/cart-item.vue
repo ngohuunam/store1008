@@ -108,7 +108,7 @@ export default {
         size: this.item.size,
         quantity: this.item.cart,
       }
-      this.$store.commit('sliderData', { prodId: this.item.prodId, hex: this.item.hex, img_i: this.item.img_i, info: info })
+      this.$store.commit('setState', { des: 'sliderData', value: { prodId: this.item.prodId, hex: this.item.hex, img_i: this.item.img_i, info: info } })
     },
     cartChangeProperty(hex, size) {
       const newId = `${this.item.prodId}-${hex}_${size}`

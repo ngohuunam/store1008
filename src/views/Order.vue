@@ -149,7 +149,7 @@ export default {
         buyer: this.$store.state.buyer,
       }
       this.itemList = []
-      this.$store.commit('pushOrdered', orderedItem)
+      this.$store.commit('newOrder', orderedItem)
       this.$router.push('/ordered')
       this.openModal = false
     },

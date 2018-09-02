@@ -1,7 +1,7 @@
 self.postMessage({ commit: 'setState', payload: { des: 'imgWorker', value: true } })
 
-import { Store, get, set } from 'idb-keyval'
-const idbstore = new Store('vms-imgs')
+import { IDStore, getKey, setKey } from 'idb-keyval'
+const idbstore = new IDStore('vms-imgs')
 let port
 const remote = 'https://res.cloudinary.com/dgprt0eay/image/upload/'
 
@@ -13,7 +13,6 @@ self.onmessage = e => {
     case 'channel':
       console.log('iw data.port', e.data.port)
       port = e.data.port
-      port.postMessage('Hello from iw')
       port.onmessage = e => {
         console.log('ww send mess via channel', e.data)
         switch (e.data.func) {
@@ -39,7 +38,7 @@ const handleResult = info => {
 }
 
 const handleError = info => {
-  // postMessage(JSON.stringify(info))
+  self.postMessage({ dispatch: 'pushMess', payload: { text: info } })
   console.error(info)
 }
 
@@ -48,51 +47,56 @@ const checkImgsByColors = colors => {
 }
 
 const checkImgsByColor = color => {
-  color.imgs.forEach(pid => {
-    get(pid, idbstore)
-      .then(() => handleResult({ task: 'checkImg', status: 'ok', prod: color.prod, hex: color.value, key: pid }))
-      .catch(e => {
-        handleError({ task: 'checkImg', status: 'get keyvalue error', e: e, prod: color.prod, hex: color.value, key: pid })
-        saveImgByPid(pid, color.prod, color.value)
-      })
+  color.imgs.forEach(async pid => {
+    try {
+      const value = await getKey(pid, idbstore)
+      if (value) handleResult({ task: 'checkImg', status: 'ok', prod: color.prod, hex: color.value, key: pid })
+      else saveImgByPid(pid, color.prod, color.value)
+    } catch (e) {
+      handleError({ task: 'checkImg', status: 'get keyvalue error', e: e, prod: color.prod, hex: color.value, key: pid })
+    }
   })
 }
 
-const saveImgByPid = (pid, prodId, hex) => {
+const saveImgByPid = async (pid, prodId, hex) => {
   const url = remote + pid
-  fetchURL(url)
-    .then(blob => {
-      saveBlob(pid, prodId, hex, blob)
-        .then(key => handleResult({ task: 'saveImg', status: 'ok', prod: prodId, hex: hex, key: key }))
-        .catch(e => handleError({ task: 'saveBlob', status: 'error', e: e, prod: prodId, hex: hex, pid: pid }))
-    })
-    .catch(e => handleError({ task: 'fetchURL', status: 'error', e: e, prod: prodId, hex: hex, url: url }))
+  try {
+    const blob = await fetchURL(url)
+    try {
+      await saveBlob(pid, prodId, hex, blob)
+      handleResult({ task: 'saveImg', status: 'ok', prod: prodId, hex: hex, key: pid })
+    } catch (e) {
+      handleError({ task: 'saveBlob', status: 'error', e: e, prod: prodId, hex: hex, pid: pid })
+    }
+  } catch (e) {
+    handleError({ task: 'fetchURL', status: 'error', e: e, prod: prodId, hex: hex, url: url })
+  }
 }
 
 const saveImgsByColor = color => {
-  color.imgs.forEach(pid => saveImgByPid(pid, color.prod, color.value))
+  color.imgs.forEach(async pid => await saveImgByPid(pid, color.prod, color.value))
 }
 
 const saveImgsByColors = colors => {
-  colors.forEach(color => saveImgsByColor(color))
+  colors.forEach(async color => await saveImgsByColor(color))
 }
 
-const saveBlob = (pid, prod, hex, blob) => {
-  return new Promise((resolve, reject) => {
-    const value = { prod: prod, hex: hex, blob: blob }
-    set(pid, value, idbstore)
-      .then(() => resolve(pid))
-      .catch(e => reject('set keyvalue error: ' + e))
-  })
+const saveBlob = async (pid, prod, hex, blob) => {
+  const value = { prod: prod, hex: hex, blob: blob }
+  try {
+    const res = await setKey(pid, value, idbstore)
+    return res
+  } catch (e) {
+    throw new Error('set keyvalue error: ' + e.message)
+  }
 }
 
-const fetchURL = url => {
-  return new Promise((resolve, reject) => {
-    fetch(url)
-      .then(response => {
-        return response.blob()
-      })
-      .then(blob => resolve(blob))
-      .catch(e => reject('fetch error: ' + e))
-  })
+const fetchURL = async url => {
+  try {
+    const response = await fetch(url)
+    const blob = await response.blob()
+    return blob
+  } catch (e) {
+    throw new Error('fetch error: ' + e.message)
+  }
 }

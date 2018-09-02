@@ -1,8 +1,7 @@
 self.postMessage({ commit: 'setState', payload: { des: 'worker', value: true } })
+import { IDStore, getKey } from 'idb-keyval'
 
-import { Store, get } from 'idb-keyval'
-
-const idbstore = new Store('vms-state')
+const idbstore = new IDStore('vms-state')
 
 const remote = process.env.NODE_ENV === 'production' ? 'wss://busti.club/' : 'ws://' + location.hostname + ':5000'
 let socket, reconnectWSTimeout, port, closedByMe
@@ -16,32 +15,32 @@ const guid = () => {
 }
 
 let protocol = guid()
-
-const connect = () => {
+const connect = async () => {
   self.postMessage({ commit: 'setStateArray', payload: { des: 'mess', key: 'id', value: { text: 'Connecting to server...', id: 'connecting' } } })
-  get('state', idbstore)
-    .then(state => {
-      protocol = state.buyer._id || state.buyer.phone || protocol
-    })
-    .catch(e => console.error('[worker buyerId get state error:]', e))
-    .finally(() => {
-      socket = new WebSocket(remote, protocol)
-      onEvent()
-    })
+  try {
+    const state = await getKey('state', idbstore)
+    if (state) protocol = state.buyer._id || state.buyer.phone || protocol
+  } catch (e) {
+    self.postMessage({ dispatch: 'pushMess', payload: { text: `connect error: ${e.message}` } })
+  } finally {
+    socket = new WebSocket(remote, protocol)
+    onEvent()
+  }
 }
+
+connect()
 
 const reconnect = () => {
   self.postMessage({ commit: 'setStateArray', payload: { des: 'mess', key: 'id', value: { text: 'Reconnecting to server...', id: 'connecting' } } })
   clearTimeout(reconnectWSTimeout)
   reconnectWSTimeout = setTimeout(() => {
     connect()
-    // onEvent()
   }, 3000)
 }
 
 const onEvent = () => {
   ;['onmessage', 'onclose', 'onerror', 'onopen'].forEach(event => {
-    socket[event] = mess => {
+    socket[event] = async mess => {
       const data = mess.data ? JSON.parse(mess.data) : { func: null }
       console.log(`[socket ${event} received]`, data)
       const func = data.func
@@ -55,7 +54,7 @@ const onEvent = () => {
 
             case 'sync-prods':
               self.postMessage(data)
-              syncProds(data.list)
+              await syncProds(data.list)
               break
 
             case 'push-prod':
@@ -71,7 +70,7 @@ const onEvent = () => {
               break
 
             case 'sync-items':
-              syncItems(data.prodId)
+              await syncItems(data.prodId)
               break
 
             default:
@@ -80,25 +79,19 @@ const onEvent = () => {
           break
 
         case 'onopen':
-          // console.log(`worker onopen ws`)
           self.postMessage({ commit: 'pushState', payload: { des: 'mess', value: { text: `Get list of products,...`, color: 'cyan' } } })
-          syncList()
-          syncOrdered()
+          await syncList()
+          await syncOrdered()
           clearTimeout(reconnectWSTimeout)
           break
 
         case 'onclose':
-          console.log('ws closed')
           self.postMessage({ commits: ['setState', 'setStateArray'], payload: [{ des: 'socket', value: false }, { des: 'mess', value: { text: 'Not connecting to server!', id: 'connecting' } }] })
-          if (!closedByMe) {
-            reconnect()
-          }
+          if (!closedByMe) reconnect()
       }
     }
   })
 }
-connect()
-// onEvent()
 
 //eslint-disable-next-line
 const sksend = (SEND, func, printConsole) => {
@@ -107,34 +100,38 @@ const sksend = (SEND, func, printConsole) => {
   socket.send(SEND)
 }
 
-const newOrder = payload => {
-  const query = { func: 'newOrder', payload: payload }
-  sksend(query, 'newOrder', true)
+const syncList = async () => {
+  try {
+    let query = { func: 'list', payload: { _rev: null } }
+    const state = await getKey('state', idbstore)
+    if (state) {
+      query.payload = state.list
+      sksend(query, 'syncList', false)
+    }
+  } catch (e) {
+    self.postMessage({ dispatch: 'pushMess', payload: { text: `syncList error: ${e.message}` } })
+  }
 }
 
-const syncList = () => {
-  let query = { func: 'list', payload: { _rev: null } }
-  get('state', idbstore)
-    .then(state => (query.payload = state.list))
-    .catch(e => console.error('worker syncList get state error:', e))
-    .finally(() => sksend(query, 'syncList'))
+const syncOrdered = async () => {
+  try {
+    let query = { func: 'syncOrdered', payload: { new: [], buyer: null } }
+    const state = await getKey('state', idbstore)
+    if (state) {
+      query.payload.new = state.ordered.filter(item => !item.status.received)
+      query.payload.buyer = state.buyer._id && state.buyer.phone && state.buyer.pass ? state.buyer : null
+      if (query.payload.buyer) sksend(query, 'syncOrdered', false)
+    }
+  } catch (e) {
+    self.postMessage({ dispatch: 'pushMess', payload: { text: `syncOrdered error: ${e.message}` } })
+  }
 }
 
-const syncOrdered = () => {
-  let query = { func: 'syncOrdered', buyer: null, payload: [] }
-  get('state', idbstore)
-    .then(state => {
-      query.payload = state.ordered.length ? state.ordered : []
-      query.buyer = state.buyer._id && state.buyer.phone && state.buyer.pass ? state.buyer : null
-      if (query.payload.length || query.buyer) sksend(query, 'syncOrdered', false)
-    })
-    .catch(e => console.error('worker syncOrdered get state error:', e))
-}
-
-const syncProds = list => {
-  let query = { func: 'syncProd', payload: { _rev: null, prodId: null } }
-  get('state', idbstore)
-    .then(state => {
+const syncProds = async list => {
+  try {
+    let query = { func: 'syncProd', payload: { _rev: null, prodId: null } }
+    const state = await getKey('state', idbstore)
+    if (state) {
       const LIST = list || state.list.value
       LIST.forEach(id => {
         const prod = state.prods.find(_prod => _prod._id === id)
@@ -143,25 +140,27 @@ const syncProds = list => {
         query.payload._rev = rev
         sksend(query, 'syncProds success')
       })
-    })
-    .catch(e => {
-      console.error('worker syncProds get state error:', e)
+    } else {
       if (list && list.length) {
         list.forEach(id => {
           query.prodId = id
           sksend(query, 'syncProds error')
         })
       } else {
-        syncList()
-        syncOrdered()
+        await syncList()
+        await syncOrdered()
       }
-    })
+    }
+  } catch (e) {
+    self.postMessage({ dispatch: 'pushMess', payload: { text: `syncProds error: ${e.message}` } })
+  }
 }
 
-const syncItems = prodId => {
-  const SEND = { func: 'syncItems', payload: { prodId: prodId, term: [] } }
-  get('state', idbstore)
-    .then(state => {
+const syncItems = async prodId => {
+  try {
+    const SEND = { func: 'syncItems', payload: { prodId: prodId, term: [] } }
+    const state = await getKey('state', idbstore)
+    if (state) {
       const prod = state.prods.find(_prod => _prod._id === prodId)
       if (prod && prod.colors.length) {
         prod.colors.map(color => {
@@ -170,9 +169,11 @@ const syncItems = prodId => {
           })
         })
       }
-    })
-    .catch(e => console.error('worker syncItems get state error:', e))
-    .finally(() => sksend(SEND, 'syncItems', false))
+      sksend(SEND, 'syncItems', false)
+    }
+  } catch (e) {
+    self.postMessage({ dispatch: 'pushMess', payload: { text: `syncOrdered error: ${e.message}` } })
+  }
 }
 
 let closeWSTimeOut
@@ -186,15 +187,11 @@ self.onmessage = e => {
     //eslint-disable-next-line
     case 'register':
     case 'login':
+    case 'newOrder':
       sksend({ func: type, payload: data.payload }, type, true)
       break
-    case 'pushOrdered':
-      newOrder(data.payload)
-      break
     case 'channel':
-      console.log('ww data.port', data.port)
       port = data.port
-      port.postMessage('Hello from ww')
       port.onmessage = e => console.log('iw send mess via channel', e)
       break
     case 'closedByMe':

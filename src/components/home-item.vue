@@ -14,12 +14,12 @@
 
       <!-- Fly button -->
       <div class="fly-wrapper">
-        <button :disabled="!countBagBySet.cart" class="btn bag round shadow bg white-06 m-l-4" :class="badgeClass.flyCart" @click="operate.des === 'cart' ? $emit('routerPush', '/cart') : operate = {des: 'cart'}">
+        <button :disabled="!countBagBySet.cart" class="btn bag round shadow bg white-06 m-l-4" :class="badgeClass.flyCart" @click="flyBtnOnClick('cart')">
           <transition name="bounce">
             <div v-if="countBagBySet.cart" class="badge bg green">{{countBagBySet.cart}}</div>
           </transition>
         </button>
-        <button :disabled="!countBagBySet.order" class="btn order round shadow bg white-06 m-l-4" :class="badgeClass.flyOrder" @click="operate.des === 'order' ? $emit('routerPush', '/order') : operate = {des: 'order'}">
+        <button :disabled="!countBagBySet.order" class="btn order round shadow bg white-06 m-l-4" :class="badgeClass.flyOrder" @click="flyBtnOnClick('order')">
           <transition name="bounce">
             <div v-if="countBagBySet.order" class="badge bg cyan">{{countBagBySet.order}}</div>
           </transition>
@@ -28,7 +28,7 @@
 
       <!-- Image -->
       <transition name="fade" class="relative">
-        <ImageLoad class="from-to-top active-absolute fit center" :prodId="prodId" :hex="imgHex" :key="imgHex" :pid="img" @click.native="$store.commit('setState', {des: 'sliderData', value: {prodId: prodId, hex: imgHex, img_i: 0}})" />
+        <ImageLoad class="from-to-top active-absolute fit center" :prodId="prodId" :hex="imgHex" :key="img" :pid="img" @click.native="openSlider" />
       </transition>
 
       <!-- Price -->
@@ -89,6 +89,13 @@ export default {
   },
   watch: {},
   methods: {
+    flyBtnOnClick(des) {
+      if (this.operate.des === des) this.$emit('routerPush', '/' + des)
+      else this.operate = { des: des }
+    },
+    openSlider() {
+      this.$store.commit('setState', { des: 'sliderData', value: { prodId: this.prodId, hex: this.imgHex, img_i: this.operate.img_i } })
+    },
     sizeBtnClick(size) {
       this.operate = { size: size.size }
       if (this.quantity(size).remain < 1) {

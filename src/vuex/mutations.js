@@ -90,7 +90,7 @@ export const toOrder = state => {
     }
   })
 }
-export const pushOrdered = (state, orderedItem) => {
+export const newOrder = (state, orderedItem) => {
   state.ordered.unshift(orderedItem)
   orderedItem.items.map(_item => {
     const index = state.bag.findIndex(__item => __item.id === _item.bagid)
