@@ -1,34 +1,30 @@
 <template>
   <transition-group name="fade" tag="div" id="order-page" :class="{'ani-reverse': del}">
-    <!-- Notice when no order item -->
-    <div v-if="show && !items.length" class="notice from-to-top" key="notice">
-      <h1 class="center">Please get some product</h1>
-      <button class="btn home size-2" @click="routerPush('/')" />
-      <button class="btn bag size-2" :class="{fill: countCart}" @click="routerPush('/cart')">
-        <transition name="bounce">
-          <div v-if="countCart" class="badge">{{countCart}}</div>
-        </transition>
-      </button>
-      <button class="btn home size-2" @click="routerPush('/ordered')" />
-    </div>
 
     <!-- Page Function sticky -->
-    <div v-if="items.length && show && !openModal" class="card sticky from-to-top" key="sticky">
+    <div v-if="show" class="card sticky from-to-top" key="sticky">
       <div class="flex justify-end">
-        <button class="flex-1 btn" @click="backAllToCart">
-          <span class="btn arrow-left" /> All cart </button>
-        <button class="flex-1 btn border-left" @click="routerPush('/cart')">
-          <span class="btn bag" :class="{fill: countCart}">
-            <transition name="bounce">
-              <div v-if="countCart" class="badge">{{countCart}}</div>
-            </transition>
-          </span> Cart
+        <button :disabled="!items.length" class="flex-1 btn" @click="backAllToCart">
+          <span class="btn arrow-left" /> All </button>
+        <button class="flex-1 btn border-left" @click="routerPush('/')"> Home </button>
+        <button class="flex-1 btn border-left" @click="routerPush('/cart')"> Cart
+          <transition name="bounce">
+            <div v-if="countCart" class="badge btn-classic">{{countCart}}</div>
+          </transition>
         </button>
-        <button class="flex-1 btn border-left" @click="routerPush('/')">
-          <span class="btn home" /> Home </button>
-        <button class="flex-1 btn border-left" @click="spliceAllOrder">
-          <span class="btn close" /> Del all </button>
+        <button class="flex-1 btn border-left" @click="routerPush('/ordered')"> Ordered
+          <transition name="bounce">
+            <div v-if="countOrdered" class="badge btn-classic">{{countOrdered}}</div>
+          </transition>
+        </button>
+        <button :disabled="!items.length" class="flex-1 btn border-left" @click="spliceAllOrder">
+          <span class="btn close" /> All </button>
       </div>
+    </div>
+
+    <!-- Notice when no cart item -->
+    <div v-if="show && !items.length" class="notice from-to-top" key="notice">
+      <h1 class="center">Please get some product</h1>
     </div>
 
     <!-- List of order items -->
@@ -112,7 +108,6 @@ export default {
         return {
           _id: item._id,
           _rev: item._rev,
-          bagid: item.id,
           prodId: item.prodId,
           hex: item.hex,
           size: item.size,
@@ -159,7 +154,7 @@ export default {
       this.items.map(item => {
         const info = {
           des: 'order',
-          id: item.id,
+          _id: item._id,
           quantity: -item.order,
         }
         this.$store.commit('change', info)
@@ -168,7 +163,7 @@ export default {
     backAllToCart() {
       this.del = false
       this.itemList = []
-      this.items.map(item => this.$store.commit('backToCart', item.id))
+      this.items.map(item => this.$store.commit('backToCart', item._id))
     },
     routerPush(path) {
       this.itemList = []
@@ -183,6 +178,11 @@ export default {
     },
   },
   computed: {
+    countOrdered: {
+      get() {
+        return this.$store.state.ordered.length
+      },
+    },
     modal: {
       get() {
         return this.logged ? 'Contact' : 'Login'

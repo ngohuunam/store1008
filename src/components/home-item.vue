@@ -42,9 +42,9 @@
 
     <!-- Color -->
     <div v-if="item && item.colorInfo.length" class="flex m-b-8">
-      <button v-for="color in item.colorInfo" :key="color.label" @click="operate = {hex: color.value}" class="btn m-l-4 no-margin-first" :class="{selected: color.value === operate.hex}" :style="{ 'background-color' : color.value}">
+      <button v-for="color in item.colorInfo" :key="color.label" @click="operate = {hex: color.value, label: color.label}" class="btn m-l-4 no-margin-first" :class="{selected: color.value === operate.hex}" :style="{ 'background-color' : color.value}">
         <transition name="bounce">
-          <div v-if="countBagByHex(color.hex)[operate.des]" :key="operate.des" class="badge bg" :class="badgeClass.bg">{{countBagByHex(color.hex)[operate.des]}}</div>
+          <div v-if="countBagByColorLabel(color.label)[operate.des]" :key="operate.des" class="badge bg" :class="badgeClass.bg">{{countBagByColorLabel(color.label)[operate.des]}}</div>
         </transition>
         <div class="sale size-06 absolute at-bot at-right" v-if="checkSaleByHex(color.hex)">Sale!!</div>
       </button>
@@ -98,16 +98,14 @@ export default {
     },
     sizeBtnClick(size) {
       this.operate = { size: size.size }
-      if (this.quantity(size).remain < 1) {
-        this.$store.dispatch('pushMess')
-      }
+      if (this.quantity(size).remain < 1) this.$store.dispatch('pushMess')
     },
     buy() {
       this.change(1, 'order')
       this.$emit('routerPush', '/order')
     },
     quantity(size) {
-      const id = `${this.prodId}-${this.operate.hex}_${size.size}`
+      const id = `${this.prodId}.${this.operate.label}-${this.operate.hex.slice(1)}_${size.size}`
       const quantity = this.$store.getters.quantity(id)
       const remain = size.stock - quantity.cart - quantity.order
       return { ...quantity, ...{ remain: remain } }
@@ -115,15 +113,16 @@ export default {
     checkSaleByHex(hex) {
       return this.item.colors.some(color => color.hex === hex && color.sizes.some(size => size.sale))
     },
-    countBagByHex(hex) {
-      const term = `${this.prodId}-${hex}_`
+    countBagByColorLabel(label) {
+      const term = `${this.prodId}.${label}-`
       return this.$store.getters.countBagByTerm(term)
     },
     toggleStar() {
-      const id = `${this.prodId}-${this.operate.hex}_${this.operate.size}`
+      const id = `${this.prodId}.${this.operate.label}-${this.operate.hex.slice(1)}_${this.operate.size}`
       const info = {
         id: id,
         prodId: this.prodId,
+        label: this.operate.label,
         hex: this.operate.hex,
         size: this.operate.size,
       }
@@ -131,19 +130,18 @@ export default {
     },
     change(amount, des) {
       this.operate = { des: des }
-      const id = `${this.prodId}-${this.operate.hex}_${this.operate.size}`
+      const id = this.sizeObj._id
       const checkBag = this.$store.getters.quantity(id)
       if (checkBag.has) {
         const info = {
-          id: id,
+          _id: id,
           des: des,
           amount: amount,
         }
         this.$store.commit('change', info)
       } else {
         const item = {
-          id: id,
-          _id: this.sizeObj._id,
+          _id: id,
           _rev: this.sizeObj._rev,
           prodId: this.prodId,
           hex: this.operate.hex,
@@ -155,6 +153,7 @@ export default {
           check: false,
           priceAtAdd: this.sizeObj.price,
           saleAtAdd: this.sizeObj.sale,
+          stockAtAdd: this.sizeObj.stock,
           key: Date.now(),
         }
         this.$store.commit('pushState', { des: 'bag', value: item })
@@ -225,12 +224,12 @@ export default {
     },
     countBagBySet: {
       get() {
-        return this.$store.getters.countBagByTerm(`${this.prodId}-`)
+        return this.$store.getters.countBagByTerm(`${this.prodId}.`)
       },
     },
     hasStar: {
       get() {
-        return this.$store.getters.hasStar(`${this.prodId}-`)
+        return this.$store.getters.hasStar(`${this.prodId}.`)
       },
     },
     item: {

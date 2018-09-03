@@ -57,7 +57,7 @@ export const itemChange = (state, doc) => {
 }
 
 export const change = (state, info) => {
-  const index = state.bag.findIndex(item => item.id === info.id)
+  const index = state.bag.findIndex(item => item._id === info._id)
   const item = state.bag[index]
   const des = info.des
   item[des] += info.amount
@@ -100,7 +100,7 @@ export const newOrder = (state, orderedItem) => {
 }
 
 export const backToCart = (state, id) => {
-  const item = state.bag.find(_item => _item.id === id)
+  const item = state.bag.find(_item => _item._id === id)
   item.cart += item.order
   item.order = 0
 }
@@ -112,39 +112,61 @@ export const toggleStar = (state, info) => {
 }
 
 export const toggleCheckAll = (state, boolean) => {
-  state.bag.map(item => (item.check = boolean))
+  state.bag.map(item => {
+    if (item.cart) item.check = boolean
+  })
 }
 
 export const toggleCheck = (state, id) => {
-  const item = state.bag.find(_item => _item.id === id)
+  const item = state.bag.find(_item => _item._id === id)
   item.check = !item.check
 }
 
 export const spliceChecked = state => {
-  state.bag.map(item => {
-    if (item.check) {
-      item.cart = 0
+  state.bag.reduceRight((res, item, i) => {
+    if (item.check && item.cart) {
+      if (!item.oder) state.bag.splice(i, 1)
+      else item.cart = 0
     }
-  })
+    return res++
+  }, 0)
 }
 
 export const cartChangeProperty = (state, info) => {
-  const existItem = state.bag.find(_item => _item.id === info.newId)
+  const existItem = state.bag.find(_item => _item._id === info.newId && _item.cart)
   if (existItem) {
     existItem.cart += info.quantity
-    const currentIndex = state.bag.findIndex(_item => _item.id === info.currentId)
+    existItem.img_i = info.img_i
+    const currentIndex = state.bag.findIndex(_item => _item._id === info.currentId)
     const currentItem = state.bag[currentIndex]
     currentItem.cart = 0
     if (!currentItem.order) state.bag.splice(currentIndex, 1)
   } else {
-    const currentItem = state.bag.find(_item => _item.id === info.currentId)
-    currentItem.hex = info.hex
-    currentItem.size = info.size
-    currentItem.id = info.newId
+    const currentCartItem = state.bag.find(_item => _item._id === info.currentId && _item.cart)
+    currentCartItem._id = info.newId
+    currentCartItem._rev = ''
+    currentCartItem.img_i = info.img_i
+    currentCartItem.hex = info.hex
+    currentCartItem.label = info.label
+    currentCartItem.size = info.size
+    currentCartItem.priceAtAdd = 0
+    currentCartItem.saleAtAdd = 0
+    currentCartItem.stockAtAdd = 0
+    const prod = state.prods.find(_prod => _prod._id === info.prodId)
+    const color = prod.colors.find(_color => _color.value === info.hex)
+    if (color) {
+      const size = color.sizes.find(_size => _size.size === info.size)
+      if (size) {
+        currentCartItem._rev = size._rev
+        currentCartItem.priceAtAdd = size.price
+        currentCartItem.saleAtAdd = size.sale
+        currentCartItem.stockAtAdd = size.stock
+      }
+    }
   }
 }
 
 export const cartChangeImg = (state, info) => {
-  const item = state.bag.find(_item => _item.id === info.id)
+  const item = state.bag.find(_item => _item._id === info.id)
   item.img_i = info.i
 }

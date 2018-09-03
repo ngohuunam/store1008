@@ -6,15 +6,12 @@ let port
 const remote = 'https://res.cloudinary.com/dgprt0eay/image/upload/'
 
 self.onmessage = e => {
-  // console.log('img worker data from message', e)
   const func = e.data.func
   const colors = e.data.colors
   switch (func) {
     case 'channel':
-      console.log('iw data.port', e.data.port)
       port = e.data.port
       port.onmessage = e => {
-        console.log('ww send mess via channel', e.data)
         switch (e.data.func) {
           case 'fetch':
             saveImgsByColors(e.data.colors)

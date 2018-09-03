@@ -4,18 +4,18 @@
     <div v-if="show" class="card sticky from-to-top" key="page-header">
       <div class="flex justify-end">
         <button class="btn classic bg" :class="`${auth ? 'green' : 'red'}`" @click="login = !login"> {{phone}} </button>
-        <button class="btn classic" @click="shuffle"> Shuffle </button>
-        <button class="btn classic border left" @click="routerPush('/cart')">Bag
+        <button class="flex-1 btn" @click="shuffle"> Shuffle </button>
+        <button class="flex-1 btn border-left" @click="routerPush('/cart')">Bag
           <transition name="bounce">
             <div v-if="countBag.cart" class="badge btn-classic">{{countBag.cart}}</div>
           </transition>
         </button>
-        <button class="btn classic border left" @click="routerPush('/order')">Order
+        <button class="flex-1 btn border-left" @click="routerPush('/order')">Order
           <transition name="bounce">
             <div v-if="countBag.order" class="badge btn-classic">{{countBag.order}}</div>
           </transition>
         </button>
-        <button class="btn classic border left" @click="routerPush('/ordered')">Ordered
+        <button class="flex-1 btn border-left" @click="routerPush('/ordered')">Ordered
           <transition name="bounce">
             <div v-if="countOrdered" class="badge btn-classic">{{countOrdered}}</div>
           </transition>

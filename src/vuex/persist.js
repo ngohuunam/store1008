@@ -5,7 +5,7 @@ const idbstore = new IDStore('vms-state')
 import state from './state'
 
 const persistPlugin = async store => {
-  store.commit('pushState', { des: 'mess', value: { text: 'Init...', color: 'green', id: 'init' } })
+  store.commit('setState', { des: 'loader', value: true })
   let savedState = await getKey('state', idbstore)
   if (!savedState) {
     setTimeout(() => store.commit('setState', { des: 'firstTime', value: false }), 20 * 1000)
@@ -124,7 +124,7 @@ const persistPlugin = async store => {
     }
     document.addEventListener('visibilitychange', () => worker.postMessage({ type: 'closedByMe', value: document.hidden }), false)
   } else store.commit('pushState', { des: 'mess', value: { text: `Your browser doesn't supported, pls use chrome instead` } })
-  store.commit('spliceState', { des: 'mess', key: 'id', value: 'init' })
+  store.commit('setState', { des: 'loader', value: false })
 }
 
 export default persistPlugin

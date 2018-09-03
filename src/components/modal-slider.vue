@@ -52,7 +52,8 @@ export default {
         const info = this.$store.state.sliderData.info
         if (info.hex !== this.color.value) {
           info.hex = this.color.value
-          const newId = `${info.prodId}-${info.hex}_${info.size}`
+          info.label = this.color.label
+          const newId = `${info.prodId}.${this.color.label}-${info.hex.slice(0)}_${info.size}`
           info.newId = newId
           info.img_i = this.img_i
           this.$store.commit('cartChangeProperty', info)
@@ -171,7 +172,8 @@ export default {
   height: 100%;
   overflow: hidden;
 }
-.slider img {
+.slider img,
+.slider div {
   position: absolute;
   height: 100%;
 }

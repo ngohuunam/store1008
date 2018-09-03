@@ -30,7 +30,7 @@ export const countBag = state => {
 }
 
 export const quantity = state => id => {
-  const item = state.bag.find(_item => _item.id === id)
+  const item = state.bag.find(_item => _item._id === id)
   if (item) return { cart: item.cart, order: item.order, has: true }
   return { cart: 0, order: 0, has: false }
 }
@@ -38,7 +38,7 @@ export const quantity = state => id => {
 export const countBagByTerm = state => term => {
   const FIRST = { cart: 0, order: 0 }
   const res = state.bag.reduce((RES, item) => {
-    if (item.id.includes(term)) {
+    if (item._id.includes(term)) {
       if (item.cart) RES.cart++
       if (item.order) RES.order++
     }
@@ -52,17 +52,17 @@ export const hasStar = state => id => {
 }
 
 export const hasCartChecked = state => {
-  return state.bag.some(item => item.check)
+  return state.bag.some(item => item.cart && item.check)
 }
 
 export const allCartChecked = state => {
-  return state.bag.every(item => item.check)
+  return state.bag.every(item => item.cart && item.check)
 }
 
 export const homeItemInfo = state => prodId => {
   const info = state.homeItemInfo.find(item => item.prodId === prodId)
   if (info) return info
-  else return { size: null, hex: null, des: null, img_i: 0 }
+  else return { size: null, hex: null, label: '', des: null, img_i: 0 }
 }
 
 export const cartItemInfo = (state, getters) => item => {
@@ -106,7 +106,7 @@ export const itemPrice = (state, getters) => item => {
 }
 export const remain = (state, getters) => item => {
   const orderedLen = state.ordered.reduce((res, curr) => {
-    return (res += curr.status.confirmed ? 0 : curr.items.filter(_item => _item.bagid === item.id).length)
+    return (res += curr.status.confirmed ? 0 : curr.items.filter(_item => _item._id === item._id).length)
   }, 0)
   const remain = getters.cartItemInfo(item).stock - item.order - orderedLen
   return remain

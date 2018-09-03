@@ -3,9 +3,9 @@
     <div class="flex align-center space-between">
       <div>Name: {{item.name}}</div>
       <div class="flex">
-        <button class="btn arrow-left" @click="backToCart" />
-        <button class="btn star" :class="{fill : hasStar}" @click="toggleStar" />
-        <button class="btn close" @click="spliceOrder" />
+        <button class="btn arrow-left bg-right" @click="backToCart" />
+        <button class="btn star bg-right" :class="{fill : hasStar}" @click="toggleStar" />
+        <button class="btn close bg-right" @click="spliceOrder" />
       </div>
     </div>
     <div class="flex space-between">
@@ -36,7 +36,7 @@ export default {
       this.$emit('splice', this.index, true)
       const info = {
         des: 'order',
-        id: this.item.id,
+        _id: this.item._id,
         quantity: -this.item.order,
       }
       this.$store.commit('change', info)
@@ -52,7 +52,7 @@ export default {
     },
     backToCart() {
       this.$emit('splice', this.index, false)
-      this.$store.commit('backToCart', this.item.id)
+      this.$store.commit('backToCart', this.item._id)
     },
   },
   computed: {

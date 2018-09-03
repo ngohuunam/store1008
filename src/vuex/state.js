@@ -6,7 +6,7 @@ export default {
   broadcastChannel: false,
   messageChannel: false,
   loading: require('../assets/loading.jpg'),
-  loader: false,
+  loader: true,
   shippingCost: 35,
   taxFee: 7,
   star: [],

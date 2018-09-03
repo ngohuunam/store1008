@@ -1,38 +1,36 @@
 <template>
   <transition-group name="fade" tag="div" id="cart-page" :class="{expand: expand, 'ani-reverse': toOrder}">
 
+    <!-- Page header Sticky  -->
+    <div v-if="show" class="card sticky from-to-top" key="page-header">
+      <div class="flex align-center space-between">
+        <div class="flex align-center">
+          <button :disabled="!items.length" class="btn check" :class="{checked : allCartChecked}" @click="toggleCheckAll" />
+          <div :class="{'text-grey' : !items.length}">Select all </div>
+          <button :disabled="!hasCartChecked" class="btn un-check m-l-4" @click="$store.commit('toggleCheckAll', false)" />
+          <div :class="{'text-grey' : !hasCartChecked}"></div>
+          <button :disabled="!hasCartChecked" class="btn close" @click="spliceChecked" />
+        </div>
+        <div class="flex">
+          <button class="btn classic border-left" @click="routerPush('/')">Home</button>
+          <button class="btn classic border-left" @click="routerPush('/order')">Order
+            <transition name="bounce">
+              <div v-if="countOrder" class="badge btn-classic">{{countOrder}}</div>
+            </transition>
+          </button>
+          <button class="btn classic border-left" @click="routerPush('/ordered')"> Ordered
+            <transition name="bounce">
+              <div v-if="countOrdered" class="badge btn-classic">{{countOrdered}}</div>
+            </transition>
+          </button>
+          <!-- <button class="btn home m-l-4" @click="routerPush('/')" /> -->
+        </div>
+      </div>
+    </div>
+
     <!-- Notice when no cart item -->
     <div v-if="show && !items.length" class="notice from-to-top" key="notice">
       <h1 class="center">Please get some product</h1>
-      <button class="btn home size-2" @click="routerPush('/')" />
-      <button class="btn order size-2" :class="{fill: countOrder}" @click="routerPush('/order')">
-        <transition name="bounce">
-          <div v-if="countOrder" class="badge">{{countOrder}}</div>
-        </transition>
-      </button>
-    </div>
-
-    <!-- Page header Sticky  -->
-    <div v-if="items.length && show" class="card sticky from-to-top" key="page-header">
-      <div class="flex align-center space-between">
-        <div class="flex align-center">
-          <button class="btn check" :class="{checked : allCartChecked}" @click="toggleCheckAll" />
-          <div>Select all </div>
-          <button :disabled="!hasCartChecked" class="btn un-check m-l-4" @click="$store.commit('toggleCheckAll', false)" />
-          <div :class="{'text-grey' : !hasCartChecked}">Unselect all</div>
-        </div>
-        <div class="flex">
-          <button class="flex btn classic" @click="routerPush('/order')">
-            <span class="btn order" :class="{fill: countOrder}">
-              <transition name="bounce">
-                <div v-if="countOrder" class="badge">{{countOrder}}</div>
-              </transition>
-            </span> Order
-          </button>
-          <button class="btn home m-l-4" @click="routerPush('/')" />
-          <button :disabled="!hasCartChecked" class="btn close bg-left m-l-4" @click="$store.commit('spliceChecked')" />
-        </div>
-      </div>
     </div>
 
     <!-- List of cart items -->
@@ -111,6 +109,14 @@ export default {
     clearTimeout(this.timeout)
   },
   methods: {
+    spliceChecked() {
+      this.toOrder = false
+      this.items.reduceRight((res, item, i) => {
+        if (item.check) this.itemList.splice(i, 1)
+        return res
+      }, 0)
+      this.$store.commit('spliceChecked')
+    },
     spliceCart(index) {
       this.toOrder = false
       this.itemList.splice(index, 1)
@@ -144,6 +150,11 @@ export default {
     },
   },
   computed: {
+    countOrdered: {
+      get() {
+        return this.$store.state.ordered.length
+      },
+    },
     countOrder: {
       get() {
         return this.$store.getters.countBag.order
@@ -151,7 +162,7 @@ export default {
     },
     allCartChecked: {
       get() {
-        return this.$store.getters.allCartChecked
+        return this.items.length ? this.$store.getters.allCartChecked : false
       },
     },
     hasCartChecked: {

@@ -4,7 +4,7 @@
     <!-- Header -->
     <div class="flex space-between">
       <div class="flex align-center">
-        <button class="btn check" :class="{checked : item.check}" @click="$store.commit('toggleCheck', item.id)" />
+        <button class="btn check" :class="{checked : item.check}" @click="$store.commit('toggleCheck', item._id)" />
         <div>#{{item.prodId}}</div>
       </div>
       <div class="flex">
@@ -91,7 +91,7 @@ export default {
   methods: {
     toggleStar() {
       const info = {
-        id: this.item.id,
+        id: this.item._id,
         prodId: this.item.prodId,
         hex: this.item.hex,
         size: this.item.size,
@@ -99,7 +99,7 @@ export default {
       this.$store.commit('toggleStar', info)
     },
     openSlider() {
-      const currentId = this.item.id
+      const currentId = this.item._id
       const info = {
         newId: '',
         currentId: currentId,
@@ -111,12 +111,15 @@ export default {
       this.$store.commit('setState', { des: 'sliderData', value: { prodId: this.item.prodId, hex: this.item.hex, img_i: this.item.img_i, info: info } })
     },
     cartChangeProperty(hex, size) {
-      const newId = `${this.item.prodId}-${hex}_${size}`
+      const label = this.info.colorInfo.find(ifo => ifo.value === hex).label
+      const newId = `${this.item.prodId}.${label}-${hex}_${size}`
       const info = {
         newId: newId,
-        currentId: this.item.id,
+        currentId: this.item._id,
         prodId: this.item.prodId,
+        img_i: this.item.img_i,
         hex: hex,
+        label: label,
         size: size,
         quantity: this.item.cart,
       }
@@ -129,7 +132,7 @@ export default {
     changeCart(amount) {
       const info = {
         des: 'cart',
-        id: this.item.id,
+        _id: this.item._id,
         amount: amount,
       }
       this.$store.commit('change', info)
