@@ -48,28 +48,27 @@
         <div>Final Payment Amount:</div>
         <div>{{finalOrderPayment}}</div>
       </div>
-      <button class="btn full-width bg green m-t-4" @click="openModal = true"> {{logged ? 'Place Order' : 'Login First'}} </button>
+      <button class="btn full-width bg green m-t-4" @click="modal = loggedIn ? 'Shipment' : 'Login'"> {{loggedIn ? 'Place Order' : 'Login First'}} </button>
     </div>
-    <!-- <Modal v-if="openModal" @close="() => openModal = false" key="modal" class="from-to-top" @confirm="confirm" /> -->
-    <component :is="modal" v-if="openModal" @close="openModal = false" key="modal" class="from-to-top" @confirm="confirm"></component>
+    <component :is="modal" v-if="modal" key="modal" class="from-to-top" @confirm="confirm"></component>
   </transition-group>
 </template>
 
 <script>
 import OrderItem from '@/components/order-item.vue'
-import Contact from '@/components/modal-buyer-info.vue'
+import Shipment from '@/components/modal-shipment-details.vue'
 import Login from '@/components/modal-login.vue'
 
 export default {
   name: 'order',
-  components: { OrderItem, Contact, Login },
+  components: { OrderItem, Shipment, Login },
   data() {
     return {
       show: false,
       done: false,
       del: false,
-      openModal: false,
       itemList: [],
+      modal: '',
     }
   },
   created() {},
@@ -90,63 +89,67 @@ export default {
       if (len < this.items.length) {
         this.itemList.push(len)
         this.timeout = setTimeout(this.pushList, 100)
-      } else
+      } else {
         this.timeout = setTimeout(() => {
           this.done = true
           clearTimeout(this.timeout)
         }, 100)
-    },
-    confirm() {
-      const time = Date.now()
-      const items = this.items.map(item => {
-        const price = this.$store.getters.itemPrice(item) * 1000
-        const total = item.order * price
-        const priceString = price.toLocaleString('vi') + 'đ'
-        const amount = `${item.order} x ${priceString} = ${total.toLocaleString('vi')}đ`
-        const img = this.$store.getters.orderImg(item)
-        const info = `Color: ${item.label}, Size: ${item.size}`
-        return {
-          _id: item._id,
-          _rev: item._rev,
-          prodId: item.prodId,
-          hex: item.hex,
-          size: item.size,
-          price: priceString,
-          quantity: item.order,
-          amount: amount,
-          info: info,
-          img: img,
-        }
-      })
-      const orderedItem = {
-        _id: this.$store.state.buyer._id + '@' + time,
-        _rev: '',
-        at: time,
-        items: items,
-        status: {
-          received: 0,
-          confirmed: 0,
-          packed: 0,
-          shipped: 0,
-          trackingNo: 0,
-          delivered: 0,
-          done: 0,
-          fault: 0,
-        },
-        payment: {
-          shippingCost: this.shippingCost,
-          taxFee: this.taxFee,
-          totalAmount: this.totalOrderAmount.label,
-          totalPayment: this.finalOrderPayment,
-          paid: 0,
-          payType: 0,
-        },
-        buyer: this.$store.state.buyer,
       }
-      this.itemList = []
-      this.$store.commit('newOrder', orderedItem)
-      this.$router.push('/ordered')
-      this.openModal = false
+    },
+    confirm(delieveryInfo) {
+      if (delieveryInfo) {
+        const time = Date.now()
+        const items = this.items.map(item => {
+          const price = this.$store.getters.itemPrice(item) * 1000
+          const total = item.order * price
+          const priceString = price.toLocaleString('vi') + 'đ'
+          const amount = `${item.order} x ${priceString} = ${total.toLocaleString('vi')}đ`
+          const img = this.$store.getters.orderImg(item)
+          const info = `Color: ${item.label}, Size: ${item.size}`
+          return {
+            _id: item._id,
+            _rev: item._rev,
+            prodId: item.prodId,
+            hex: item.hex,
+            size: item.size,
+            price: priceString,
+            quantity: item.order,
+            amount: amount,
+            info: info,
+            img: img,
+          }
+        })
+        const orderedItem = {
+          _id: this.$store.state.buyer._id + '@' + time,
+          _rev: '',
+          at: time,
+          items: items,
+          status: {
+            received: 0,
+            confirmed: 0,
+            packed: 0,
+            shipped: 0,
+            trackingNo: 0,
+            delivered: 0,
+            done: 0,
+            fault: 0,
+          },
+          payment: {
+            shippingCost: this.shippingCost,
+            taxFee: this.taxFee,
+            totalAmount: this.totalOrderAmount.label,
+            totalPayment: this.finalOrderPayment,
+            paid: 0,
+            payType: 0,
+          },
+          buyer: this.$store.state.buyer,
+          delieveryInfo: delieveryInfo,
+        }
+        this.itemList = []
+        this.$store.commit('newOrder', orderedItem)
+        this.$router.push('/ordered')
+      }
+      this.modal = ''
     },
     spliceAllOrder() {
       this.del = true
@@ -183,12 +186,7 @@ export default {
         return this.$store.state.ordered.length
       },
     },
-    modal: {
-      get() {
-        return this.logged ? 'Contact' : 'Login'
-      },
-    },
-    logged: {
+    loggedIn: {
       get() {
         return this.$store.state.buyer._id
       },

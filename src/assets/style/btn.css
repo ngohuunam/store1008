@@ -16,7 +16,7 @@
 }
 .btn.classic {
   padding: 0 12px;
-  font-size: 1em;
+  /* font-size: 1em; */
   width: auto;
   box-sizing: border-box;
 }
@@ -38,22 +38,22 @@
 .size-2 {
   font-size: 2em;
 }
-button.btn:disabled {
+.btn:disabled {
   opacity: 0.3;
   cursor: no-drop;
   box-shadow: none;
 }
-button.btn.selected {
+.btn.selected {
   border: 1px hsl(0, 0%, 75%) solid !important;
   box-shadow: -0.05em 0.05em 0.2em hsla(108, 100%, 50%, 0.7);
 }
-button.btn:active,
-button.btn.focus:focus {
+.btn:active,
+.btn.focus:focus {
   z-index: 1;
   opacity: 0.5;
 }
-button.btn.shadow:active,
-button.btn.shadow.focus:focus {
+.btn.shadow:active,
+.btn.shadow.focus:focus {
   box-shadow: none;
 }
 .btn.close {

@@ -17,11 +17,12 @@ module.exports = {
     // },
     plugins: [
       new CompressionPlugin({
-        asset: '[path].gz[query]',
+        filename: '[path].gz[query]',
         algorithm: 'gzip',
         test: /\.vue$|\.js$|\.css$|\.html$/,
         cache: true,
         minRatio: 0.8,
+        compressionOptions: { level: 9 },
       }),
     ],
     output: {

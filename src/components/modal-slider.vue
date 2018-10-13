@@ -1,7 +1,7 @@
 <template>
   <div class="modal-mask" v-if="prodId">
     <div class="modal">
-      <button class="btn close absolute at-top at-right z-10" @click="$store.commit('setState', {des: 'sliderData', value: null})" />
+      <button class="btn close absolute at-top at-right z-10" @click="close" />
       <div class="slider-container">
         <transition :name="transitionName" class="slider">
           <ImageLoad :prodId="prodId" :hex="color.value" :pid="img" :key="img" v-touch:swipe.left="next" v-touch:swipe.right="previous" />
@@ -47,6 +47,10 @@ export default {
     this.img_i = this.$store.state.sliderData.img_i
   },
   methods: {
+    close() {
+      this.$store.commit('setState', { des: 'sliderData', value: null })
+      document.documentElement.style.overflow = 'auto'
+    },
     pick() {
       if (this.atCart) {
         const info = this.$store.state.sliderData.info

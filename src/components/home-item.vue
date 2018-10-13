@@ -95,6 +95,7 @@ export default {
     },
     openSlider() {
       this.$store.commit('setState', { des: 'sliderData', value: { prodId: this.prodId, hex: this.imgHex, img_i: this.operate.img_i } })
+      document.documentElement.style.overflow = 'hidden'
     },
     sizeBtnClick(size) {
       this.operate = { size: size.size }

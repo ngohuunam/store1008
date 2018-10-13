@@ -12,7 +12,7 @@
 .loader {
   color: #004080;
   text-indent: -9999em;
-  margin: 88px auto;
+  margin: 20px auto;
   position: relative;
   font-size: 11px;
   -webkit-transform: translateZ(0);
@@ -158,8 +158,10 @@
   flex-direction: column;
   position: relative;
   width: 100%;
-  /* padding: 1em; */
+  max-height: 100%;
   background-color: white;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 .sticky {
   position: fixed;
@@ -195,6 +197,9 @@
   padding: 4px;
   background-color: hsl(204, 86%, 53%) !important;
   color: white;
+}
+.payment.order.done {
+  background-color: hsl(0, 0%, 70%) !important;
 }
 .payment.order > div {
   border-bottom: 1px white solid;
@@ -236,7 +241,10 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-top: 2em;
+  padding-top: 1em;
+}
+.form > div:first-of-type {
+  padding-top: 0;
 }
 .form > div:last-of-type {
   margin-bottom: 1em;

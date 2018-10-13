@@ -8,6 +8,7 @@ export default {
   props: ['prodId', 'hex', 'pid'],
   components: {},
   created() {
+    this.loading = this.$store.state.url + 'loading.jpg'
     this.count = 1
   },
   mounted() {
@@ -16,6 +17,7 @@ export default {
   },
   data() {
     return {
+      loading: '',
       objectURL: null,
     }
   },
@@ -61,11 +63,11 @@ export default {
         return this.$store.state.url + this.pid
       },
     },
-    loading: {
-      get() {
-        return this.$store.state.loading
-      },
-    },
+    // loading: {
+    //   get() {
+    //     return this.$store.state.loading
+    //   },
+    // },
     firstTime: {
       get() {
         return this.$store.state.firstTime

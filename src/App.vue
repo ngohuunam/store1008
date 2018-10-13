@@ -3,11 +3,11 @@
     <transition-group name="mess" tag="div" class="sticky at-top-27em">
       <div class="flex-1 center height-2 bg p-a-4 m-t-4 relative" v-for="(message, i) in mess" :key="i" :class="message.color || 'red'">
         <button class="btn close icon-white size-06 absolute at-top at-right" @click="$store.commit('spliceState', {des: 'mess', index: i})" />{{message.text}}</div>
+      <div class="loader" v-if="loader" key="loader">Loading...</div>
     </transition-group>
     <transition name="fade">
       <Modal v-if="$store.state.sliderData" />
     </transition>
-    <div class="loader" v-if="loader">Loading...</div>
     <keep-alive include="home-item">
       <router-view/>
     </keep-alive>

@@ -1,6 +1,6 @@
 <template>
   <div class="card">
-    <button :disabled="item.done" :class="itemBg" class="btn flex-1 full-width header p-a-4 z-10" @click="expand = !expand">{{header}}
+    <button :class="itemBg" class="btn flex-1 full-width header p-a-4 z-10" @click="expand = !expand">{{header}}
       <button v-if="!item.status.received" class="btn close icon-white size-06 absolute at-top at-right" @click="splice" /></button>
     <div class="flex">
       <button :disabled="!item.status[prop] > 0" class="btn flex-1" v-for="prop in keys" :key="prop" @click="toDate(prop)">{{prop}}</button>
@@ -8,7 +8,7 @@
     <transition name="max-height">
       <div v-if="expand && !item.status.done" class="body">
         <OrderedItemItem v-for="child in item.items" :key="child.id" :item="child" />
-        <div class="payment order">
+        <div class="payment order" :class="{done: item.status.done}">
           <div>
             <div>Total Amount:</div>
             <div>{{item.payment.totalAmount}}</div>

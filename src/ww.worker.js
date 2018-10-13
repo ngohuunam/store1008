@@ -18,14 +18,16 @@ let protocol = guid()
 const connect = async () => {
   self.postMessage({ commit: 'setStateArray', payload: { des: 'mess', key: 'id', value: { text: 'Connecting to server...', id: 'connecting' } } })
   try {
+    self.postMessage({ commit: 'setStateArray', payload: { des: 'mess', key: 'id', value: { text: 'Get local data', id: 'connecting' } } })
     const state = await getKey('state', idbstore)
     if (state) protocol = state.buyer._id || state.buyer.phone || protocol
   } catch (e) {
     self.postMessage({ dispatch: 'pushMess', payload: { text: `connect error: ${e.message}` } })
-  } finally {
-    socket = new WebSocket(remote, protocol)
-    onEvent()
   }
+  self.postMessage({ commit: 'setStateArray', payload: { des: 'mess', key: 'id', value: { text: 'Open socket...', id: 'connecting' } } })
+  socket = new WebSocket(remote, protocol)
+  self.postMessage({ commit: 'setStateArray', payload: { des: 'mess', key: 'id', value: { text: 'Open socket success', id: 'connecting' } } })
+  onEvent()
 }
 
 connect()
@@ -128,31 +130,40 @@ const syncOrdered = async () => {
 }
 
 const syncProds = async list => {
+  let state
+  let query = { func: 'syncProd', payload: { _rev: null, prodId: null } }
   try {
-    let query = { func: 'syncProd', payload: { _rev: null, prodId: null } }
-    const state = await getKey('state', idbstore)
-    if (state) {
-      const LIST = list || state.list.value
-      LIST.forEach(id => {
-        const prod = state.prods.find(_prod => _prod._id === id)
-        const rev = prod ? prod._rev : null
-        query.payload.prodId = id
-        query.payload._rev = rev
-        sksend(query, 'syncProds success')
-      })
-    } else {
-      if (list && list.length) {
-        list.forEach(id => {
-          query.prodId = id
-          sksend(query, 'syncProds error')
-        })
-      } else {
-        await syncList()
-        await syncOrdered()
-      }
-    }
+    state = await getKey('state', idbstore)
   } catch (e) {
     self.postMessage({ dispatch: 'pushMess', payload: { text: `syncProds error: ${e.message}` } })
+  }
+  if (state) {
+    const LIST = list || state.list.value
+    LIST.forEach(id => {
+      const prod = state.prods.find(_prod => _prod._id === id)
+      const rev = prod ? prod._rev : null
+      query.payload.prodId = id
+      query.payload._rev = rev
+      sksend(query, 'syncProds success')
+    })
+  } else {
+    if (list && list.length) {
+      list.forEach(id => {
+        query.prodId = id
+        sksend(query, 'syncProds error')
+      })
+    } else {
+      try {
+        await syncList()
+      } catch (e) {
+        self.postMessage({ dispatch: 'pushMess', payload: { text: `syncList error: ${e.message}` } })
+      }
+      try {
+        await syncOrdered()
+      } catch (e) {
+        self.postMessage({ dispatch: 'pushMess', payload: { text: `syncOrdered error: ${e.message}` } })
+      }
+    }
   }
 }
 

@@ -3,7 +3,7 @@
     <!-- Sticky header -->
     <div v-if="show" class="card sticky from-to-top" key="page-header">
       <div class="flex justify-end">
-        <button class="btn classic bg" :class="`${auth ? 'green' : 'red'}`" @click="login = !login"> {{phone}} </button>
+        <button class="btn classic bg" :class="`${auth ? 'green' : 'red'}`" @click="handleLogin"> {{phone}} </button>
         <button class="flex-1 btn" @click="shuffle"> Shuffle </button>
         <button class="flex-1 btn border-left" @click="routerPush('/cart')">Bag
           <transition name="bounce">
@@ -29,7 +29,7 @@
     <!-- Intersect -->
     <Intersect v-if="needLoad" @enter="load" key="intersect" :len="homeList.length" />
 
-    <Login v-if="login" key="login" @close="login = !login" />
+    <Login v-if="login" key="login" @confirm="handleLogin" />
 
   </transition-group>
 </template>
@@ -60,9 +60,9 @@ export default {
     })
   },
   methods: {
-    closeModal() {
-      this.sliderData = []
-      document.documentElement.style.overflow = 'auto'
+    handleLogin() {
+      this.login = !this.login
+      document.documentElement.style.overflow = this.login ? 'hidden' : 'auto'
     },
     load() {
       const len = this.homeList.length

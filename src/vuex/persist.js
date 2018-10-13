@@ -2,17 +2,14 @@ import { IDStore, setKey, getKey } from 'idb-keyval'
 
 const idbstore = new IDStore('vms-state')
 
-import state from './state'
-
 const persistPlugin = async store => {
-  store.commit('setState', { des: 'loader', value: true })
   let savedState = await getKey('state', idbstore)
   if (!savedState) {
     setTimeout(() => store.commit('setState', { des: 'firstTime', value: false }), 20 * 1000)
-    await setKey('state', state, idbstore)
+    await setKey('state', store.state, idbstore)
   } else {
+    savedState.loader = true
     savedState.firstTime = false
-    savedState.loader = false
     savedState.sliderData = null
     savedState.worker = false
     savedState.imgWorker = false
@@ -46,15 +43,11 @@ const persistPlugin = async store => {
     // console.log('init BroadcastChannel ' + broadcast)
     broadcast.onmessage = e => {
       const data = e.data
-      const func = data.func
-      const type = data.mutation.type
-      const payload = data.mutation.payload
-      switch (func) {
-        case 'mutation':
-          committing = true
-          store.commit(type, payload)
-          committing = false
-      }
+      const type = data.type
+      const payload = data.payload
+      committing = true
+      store.commit(type, payload)
+      committing = false
     }
   }
 
@@ -65,14 +58,10 @@ const persistPlugin = async store => {
     imgWorker = new IW()
   }
 
-  if (!imgWorker) {
+  if (!imgWorker || !worker) {
     const PseudoWorker = require('pseudo-worker')
-    imgWorker = new PseudoWorker('../iw.worker.js')
-  }
-
-  if (!worker) {
-    const PseudoWorker = require('pseudo-worker')
-    worker = new PseudoWorker('../ww.worker.js')
+    if (!imgWorker) imgWorker = new PseudoWorker('../iw.worker.js')
+    if (!worker) worker = new PseudoWorker('../ww.worker.js')
   }
 
   if (imgWorker && worker) {
@@ -125,6 +114,7 @@ const persistPlugin = async store => {
     document.addEventListener('visibilitychange', () => worker.postMessage({ type: 'closedByMe', value: document.hidden }), false)
   } else store.commit('pushState', { des: 'mess', value: { text: `Your browser doesn't supported, pls use chrome instead` } })
   store.commit('setState', { des: 'loader', value: false })
+  // console.dir(store)
 }
 
 export default persistPlugin

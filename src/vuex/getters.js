@@ -101,9 +101,11 @@ export const cartItemInfo = (state, getters) => item => {
 export const orderImg = (state, getters) => item => {
   return getters.cartItemInfo(item).img
 }
+
 export const itemPrice = (state, getters) => item => {
   return getters.cartItemInfo(item).price
 }
+
 export const remain = (state, getters) => item => {
   const orderedLen = state.ordered.reduce((res, curr) => {
     return (res += curr.status.confirmed ? 0 : curr.items.filter(_item => _item._id === item._id).length)

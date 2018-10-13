@@ -21,6 +21,9 @@ select {
   outline: none !important;
   font-size: 1em !important;
 }
+input:read-only{
+  border-bottom: none;
+}
 img {
   width: 100%;
 }
@@ -36,6 +39,12 @@ img {
 .border-left {
   border-left: 1px #ccc solid !important;
 }
+.border-bottom {
+  border-bottom: 1px #ccc solid !important;
+}
+/* .no-border{
+  border: none !important;
+} */
 .text-line-through {
   text-decoration: line-through;
 }
